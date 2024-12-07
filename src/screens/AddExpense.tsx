@@ -1,6 +1,7 @@
 /* eslint-disable react-native/no-inline-styles */
 import React from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import { SheetManager } from 'react-native-actions-sheet';
 import { Chip, Text, TextInput } from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
@@ -27,9 +28,13 @@ const AddExpense = ({ navigation }: any) => {
       <View style={styles.container}>
         <View style={styles.div}>
           <Text style={styles.text}>With you and:</Text>
-          <Chip icon="close" onPress={() => console.log('Pressed')}>
+          <TextInput
+            style={styles.input}
+            placeholder=" " // Keeps input focusable without visible text
+          />
+          {/* <Chip icon="close" onPress={() => console.log('Pressed')}>
             Example Chip
-          </Chip>
+          </Chip> */}
         </View>
         <View style={styles.inputs}>
           <TextInput placeholder="Enter a description" />
@@ -37,7 +42,10 @@ const AddExpense = ({ navigation }: any) => {
         </View>
         <View style={styles.div}>
           <Text style={styles.text}>Paid by</Text>
-          <TouchableOpacity style={styles.sDiv}>
+          <TouchableOpacity
+            onPress={() => SheetManager.show('friendsList')}
+            style={styles.sDiv}
+          >
             <Text style={styles.text}>you</Text>
           </TouchableOpacity>
           <Text style={styles.text}>and split</Text>
@@ -59,7 +67,11 @@ const styles = StyleSheet.create({
   container: { marginTop: 100, marginHorizontal: 10 },
   inputs: { gap: 20, marginBottom: 30 },
   text: { color: '#4A249D', fontSize: 20 },
-  div: { flexDirection: 'row', gap: 10, marginBottom: 30 },
+  div: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 30,
+  },
   sDiv: {
     borderColor: 'grey',
     borderWidth: 1,
@@ -78,6 +90,12 @@ const styles = StyleSheet.create({
     shadowColor: '#4A249D',
     fontSize: 20,
     color: '#4A249D',
+  },
+  input: {
+    width: 200, // Adjust as needed
+    backgroundColor: 'transparent', // No background
+    color: 'transparent', // Makes entered text invisible
+    borderWidth: 0, // No border
   },
 });
 

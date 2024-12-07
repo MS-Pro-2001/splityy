@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+// import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useAuth } from '../context/AuthContext';
 import { Avatar } from 'react-native-paper';
 interface HeaderProps {
@@ -12,7 +12,7 @@ interface HeaderProps {
 
 const CustomHeader: React.FC<HeaderProps> = ({ route, navigation }) => {
   const { user }: any = useAuth();
-  console.log(user);
+  // console.log(user);
   return (
     <View style={styles.headerContainer}>
       <Text style={styles.title}>{route.name}</Text>

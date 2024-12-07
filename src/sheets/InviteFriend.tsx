@@ -10,7 +10,7 @@ import database from '@react-native-firebase/database';
 import { createUniqueId } from '../utils/commonFunctions';
 function InviteFriends() {
   const { user }: any = useAuth();
-  console.log({ user });
+  // console.log({ user });
   const [loading, setLoading] = useState(false); // Track loading state
   const {
     control,
@@ -33,7 +33,7 @@ function InviteFriends() {
         friendsList: [
           ...(user?.friendsList || []),
           {
-            _id: createUniqueId(),
+            _id: createUniqueId('friend'),
             name: formData.name,
             contactInfo: formData?.contactInfo,
             note: formData?.note,

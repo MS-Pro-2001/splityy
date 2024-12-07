@@ -84,7 +84,7 @@ const Groups = ({ navigation }: any) => {
           {
             icon: 'android-messages',
             label: 'Invite Friends',
-            onPress: () => console.log('Pressed notifications'),
+            onPress: () => navigation.navigate('inviteFriends'),
           },
         ]}
         onStateChange={onStateChange}

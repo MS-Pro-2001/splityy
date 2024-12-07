@@ -2,7 +2,7 @@
 import React from 'react';
 import { FlatList, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { SheetManager } from 'react-native-actions-sheet';
-import { Button, Divider, FAB, TouchableRipple } from 'react-native-paper';
+import { Avatar, Button, FAB, TouchableRipple } from 'react-native-paper';
 import { useAuth } from '../../context/AuthContext';
 
 const ListEmptyComponent = () => (
@@ -25,7 +25,7 @@ const ListEmptyComponent = () => (
     </Button>
   </View>
 );
-const Item = ({ title }: any) => (
+const Item = ({ title, note }: any) => (
   <TouchableRipple
     onPress={
       () => {}
@@ -35,14 +35,18 @@ const Item = ({ title }: any) => (
   >
     <>
       <View style={styles.item}>
-        <View style={styles.grpImg} />
-        <Text style={styles.title}>{title}</Text>
+        <Avatar.Text label={title?.[0]?.toUpperCase()} size={48} />
+
+        <View>
+          <Text style={styles.title}>{title}</Text>
+          {note && <Text>{note}</Text>}
+        </View>
       </View>
     </>
   </TouchableRipple>
 );
 
-const Friends = ({ navigation }: any) => {
+const Friends = () => {
   const { user }: any = useAuth();
   return (
     <SafeAreaView style={{ flex: 1 }}>
@@ -51,7 +55,9 @@ const Friends = ({ navigation }: any) => {
         // refreshing={isRefreshing}
         ListEmptyComponent={ListEmptyComponent}
         data={user?.friendsList || []}
-        renderItem={({ item }) => <Item title={item.name} />}
+        renderItem={({ item }) => (
+          <Item title={item.name} note={item.note || ''} />
+        )}
         keyExtractor={(item) => item._id}
       />
       <FAB

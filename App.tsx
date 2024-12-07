@@ -8,6 +8,7 @@ import Loader from './src/components/Loader';
 import AddExpense from './src/screens/AddExpense';
 import CreateGroup from './src/screens/CreateGroup';
 import GroupDetail from './src/screens/GroupDetail';
+import InviteFriends from './src/screens/InviteFriends';
 
 const App = () => {
   const Stack = createNativeStackNavigator();
@@ -30,6 +31,7 @@ const App = () => {
             <Stack.Screen name="AddExpense" component={AddExpense} />
             <Stack.Screen name="createGroup" component={CreateGroup} />
             <Stack.Screen name="groupDetail" component={GroupDetail} />
+            <Stack.Screen name="inviteFriends" component={InviteFriends} />
           </>
         ) : (
           <Stack.Screen name="Login" component={Login} />

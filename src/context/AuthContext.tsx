@@ -44,6 +44,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
     });
   }, []);
 
+  useEffect(() => {
+    if (user?.id) {
+      const userRef = database().ref(`users/${user.id}`);
+
+      const onValueChange = userRef.on('value', (snapshot) => {
+        const userData = snapshot.val();
+        // console.log({ userData });
+        if (userData) {
+          const updatedUser = {
+            ...userData,
+          };
+          setUser(updatedUser);
+          AsyncStorage.setItem('userinfo', JSON.stringify(updatedUser));
+        }
+      });
+
+      // Cleanup the listener when the component unmounts or user changes
+      return () => userRef.off('value', onValueChange);
+    }
+  }, [user?.id]); // Re-run this effect if user ID changes
+
   // google
   const googleLogin = async () => {
     try {
@@ -57,7 +78,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
       const userRef = database().ref(`users/${userId}`);
       userRef.on('value', (snapshot) => {
         const userData = snapshot.val();
-        console.log({ userData });
         if (userData) {
           // Update user data in context and AsyncStorage
           const userWithGroups: UserType = {
@@ -66,6 +86,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
           };
           setUser(userWithGroups);
           AsyncStorage.setItem('userinfo', JSON.stringify(userWithGroups));
+        } else {
+          database()
+            .ref(`users/${userId}`)
+            .set({ ...(userInfo?.data?.user ?? {}) });
         }
       });
     } catch (error: any) {

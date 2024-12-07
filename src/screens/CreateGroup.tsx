@@ -14,15 +14,18 @@ const CreateGroup = ({ navigation }: any) => {
   const { user }: any = useAuth();
 
   const handleCreateGroup = () => {
-    database()
-      .ref(`/users/${user?.id}`)
-      .update({
-        groups: [
-          ...user.groups,
-          { groupId: createUniqueId(), groupName: groupName },
-        ],
+    const userGroupsRef = database().ref(`/users/${user?.id}/groups`);
+    userGroupsRef
+      .once('value')
+      .then((snapshot) => {
+        const groups = snapshot.val() ? snapshot.val() : []; // Get existing groups or initialize as an empty array
+        console.log({ groups });
+        userGroupsRef
+          .set([...groups, { groupId: createUniqueId(), groupName: groupName }]) // Set the updated groups array with the new group added
+          .then(() => console.log('Group added successfully.'));
       })
-      .then(() => console.log('Data updated.'));
+      .catch((error) => console.error('Error updating groups:', error));
+
     setGroupName('');
 
     navigation.goBack();

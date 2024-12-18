@@ -8,14 +8,17 @@ import { CustomInput } from '../components/custom/CustomInput';
 import { useAuth } from '../context/AuthContext';
 import database from '@react-native-firebase/database';
 import { createUniqueId } from '../utils/commonFunctions';
+import sendEmail from 'react-native-email';
 function InviteFriends() {
   const { user }: any = useAuth();
+
   // console.log({ user });
   const [loading, setLoading] = useState(false); // Track loading state
   const {
     control,
     handleSubmit,
     reset,
+    getValues,
     formState: { errors },
   }: any = useForm({
     defaultValues: {
@@ -26,6 +29,16 @@ function InviteFriends() {
   });
   const onSubmit = (formData: any) => {
     setLoading(true);
+
+    const to = ['mridul.sehgalwork@gmail.com']; // string or array of email addresses
+    sendEmail(to, {
+      // Optional additional arguments
+      cc: [`${getValues('contactInfo')}`], // string or array of email addresses
+      //   bcc: 'mee@mee.com', // string or array of email addresses
+      subject: 'Show how to use',
+      body: 'Some body right here',
+      checkCanOpen: false, // Call Linking.canOpenURL prior to Linking.openURL
+    }).catch(console.error);
 
     database()
       .ref(`/users/${user?.id}`)
@@ -59,25 +72,38 @@ function InviteFriends() {
           control={control}
           name="name"
           validationRules={{
-            required: { value: true, message: 'Name is required' },
+            required: {
+              value: true,
+              message: 'Name is required',
+            },
+            minLength: {
+              value: 3,
+              message: 'Name must be at least 3 characters long',
+            },
           }}
           placeholder={'Name*'}
           errors={errors}
           keyboardType="text"
         />
+
         <CustomInput
           control={control}
           name="contactInfo"
           validationRules={{
             required: {
               value: true,
-              message: 'Email or contact number is required',
+              message: 'Email is required',
+            },
+            pattern: {
+              value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+              message: 'Please enter a valid email address',
             },
           }}
-          placeholder={'Email* / Phone Number*'}
+          placeholder={'Email*'}
           errors={errors}
           keyboardType="text"
         />
+
         <CustomInput
           control={control}
           name="note"

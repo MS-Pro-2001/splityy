@@ -27,6 +27,7 @@ const ListEmptyComponent = () => (
 );
 const Item = ({ title, note }: any) => (
   <TouchableRipple
+    style={styles.item}
     onPress={
       () => {}
       // navigation.navigate('groupDetail', { groupName: title, groupId })
@@ -34,13 +35,11 @@ const Item = ({ title, note }: any) => (
     // rippleColor="rgba(0, 0, 0, .32)"
   >
     <>
-      <View style={styles.item}>
-        <Avatar.Text label={title?.[0]?.toUpperCase()} size={48} />
+      <Avatar.Text label={title?.[0]?.toUpperCase()} size={48} />
 
-        <View>
-          <Text style={styles.title}>{title}</Text>
-          {note && <Text>{note}</Text>}
-        </View>
+      <View>
+        <Text style={styles.title}>{title}</Text>
+        {note && <Text>{note}</Text>}
       </View>
     </>
   </TouchableRipple>
@@ -88,7 +87,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 5,
     backgroundColor: 'white',
-    borderRadius: 30,
+    borderRadius: 10,
     paddingTop: 20,
     paddingBottom: 20,
     paddingLeft: 10,
@@ -112,6 +111,5 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 40,
     backgroundColor: 'gray',
-    // alignSelf: 'center',
   },
 });

@@ -1,33 +1,43 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import LottieView from 'lottie-react-native';
 import { useAuth } from '../context/AuthContext';
-import Loader from '../components/Loader';
 
 const SplashScreen = ({ navigation }: any) => {
   const { user } = useAuth();
-
   useEffect(() => {
-    const checkUser = async () => {
-      // This will give time for the AuthContext to check for the user
-      if (!user) {
-        navigation.navigate('HomeScreen');
+    const timer = setTimeout(() => {
+      if (user) {
+        navigation.replace('HomeScreen');
       } else {
-        navigation.navigate('Login');
+        navigation.replace('Login');
       }
-    };
+    }, 3000);
 
-    setTimeout(() => {
-      checkUser();
-    }, 2000);
-  }, [user, navigation]);
+    // Cleanup timer to avoid memory leaks
+    return () => clearTimeout(timer);
+  }, [navigation, user]);
 
   return (
-    <View style={styles.main}>
-      <Loader />
+    <View style={styles.container}>
+      <LottieView
+        source={require('../assets/animations/splityy_lottie.json')}
+        autoPlay
+        loop={false}
+        style={styles.lottie}
+      />
     </View>
-  ); // You can add a loader here if desired
+  );
 };
 
-const styles = StyleSheet.create({ main: { flex: 1 } });
+const styles = StyleSheet.create({
+  lottie: { width: 500, height: 1000 },
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#ffffff', // Customize as per your app theme
+  },
+});
 
 export default SplashScreen;

@@ -1,6 +1,6 @@
+import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import React from 'react';
 import Login from './src/screens/Login';
 import TabNavigator from './src/navigators/TabNavigator';
 import { useAuth } from './src/context/AuthContext';
@@ -9,6 +9,7 @@ import AddExpense from './src/screens/AddExpense';
 import CreateGroup from './src/screens/CreateGroup';
 import GroupDetail from './src/screens/GroupDetail';
 import InviteFriends from './src/screens/InviteFriends';
+import SplashScreen from './src/screens/SplashScreen'; // Import SplashScreen
 
 const App = () => {
   const Stack = createNativeStackNavigator();
@@ -21,10 +22,13 @@ const App = () => {
   return (
     <NavigationContainer>
       <Stack.Navigator
+        initialRouteName="SplashScreen" // Set SplashScreen as the initial screen
         screenOptions={{
-          headerShown: false,
+          headerShown: false, // Hide the headers for all screens
         }}
       >
+        <Stack.Screen name="SplashScreen" component={SplashScreen} />
+
         {user ? (
           <>
             <Stack.Screen name="HomeScreen" component={TabNavigator} />

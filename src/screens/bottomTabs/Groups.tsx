@@ -2,21 +2,36 @@
 /* eslint-disable react/no-unstable-nested-components */
 import React from 'react';
 import { FlatList, SafeAreaView, StyleSheet, Text, View } from 'react-native';
-import { Button, Divider, FAB, TouchableRipple } from 'react-native-paper';
+import {
+  Avatar,
+  Button,
+  Divider,
+  FAB,
+  TouchableRipple,
+} from 'react-native-paper';
 import { useAuth } from '../../context/AuthContext';
+import LottieView from 'lottie-react-native';
 
 const Item = ({ title, navigation, groupId }: any) => (
   <TouchableRipple
+    style={styles.item}
     onPress={() =>
       navigation.navigate('groupDetail', { groupName: title, groupId })
     }
     // rippleColor="rgba(0, 0, 0, .32)"
   >
-    <View style={styles.item}>
+    <>
+      <Avatar.Text label={title?.[0]?.toUpperCase()} size={48} />
+
+      <View>
+        <Text style={styles.title}>{title}</Text>
+      </View>
+    </>
+    {/* <View style={styles.item}>
       <View style={styles.grpImg} />
       <Text style={styles.title}>{title}</Text>
       <Divider />
-    </View>
+    </View> */}
   </TouchableRipple>
 );
 
@@ -30,7 +45,7 @@ const Groups = ({ navigation }: any) => {
   // const [isRefreshing, setIsRefreshing] = useState(false);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={{ flex: 1 }}>
       <FlatList
         // onRefresh={() => setIsRefreshing(true)}
         // refreshing={isRefreshing}
@@ -40,42 +55,44 @@ const Groups = ({ navigation }: any) => {
               flex: 1,
               justifyContent: 'center',
               alignItems: 'center',
-              gap: 30,
-              height: '100%',
-              marginTop: 200,
+              marginTop: 100,
             }}
           >
+            <View style={{ alignItems: 'center' }}>
+              <LottieView
+                source={require('../../assets/animations/noGroup2.json')}
+                autoPlay
+                loop
+                style={styles.animation}
+              />
+            </View>
             <Text style={{ fontSize: 20 }}>No groups found</Text>
             <Button
+              style={{ margin: 20 }}
               icon="plus"
               mode="contained"
               onPress={() => navigation.navigate('createGroup')}
             >
-              Create Groups
+              Create Group
             </Button>
           </View>
         )}
-        data={user?.groups}
-        renderItem={({ item }) => (
+        data={user?.groups || []}
+        renderItem={({ item }: any) => (
           <Item
             title={item.groupName}
             navigation={navigation}
             groupId={item.groupId}
           />
         )}
-        keyExtractor={(item) => item.groupId}
+        keyExtractor={(item: any) => item.groupId}
       />
       <FAB.Group
         open={state.open}
         visible
-        icon={state.open ? 'newspaper' : 'plus'}
+        icon={state.open ? 'chevron-down' : 'plus'}
         actions={[
           // { icon: 'plus', onPress: () => console.log('Pressed add') },
-          {
-            icon: 'plus',
-            label: 'Add Expense',
-            onPress: () => navigation.navigate('AddExpense'),
-          },
           {
             icon: 'account-group-outline',
             label: 'Create Group',
@@ -85,6 +102,11 @@ const Groups = ({ navigation }: any) => {
             icon: 'android-messages',
             label: 'Invite Friends',
             onPress: () => navigation.navigate('inviteFriends'),
+          },
+          {
+            icon: 'plus',
+            label: 'Add Expense',
+            onPress: () => navigation.navigate('AddExpense'),
           },
         ]}
         onStateChange={onStateChange}
@@ -102,6 +124,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  animation: {
+    width: 200,
+    height: 200,
+    marginBottom: 40,
+  },
   fab: {
     position: 'absolute',
     margin: 16,
@@ -114,7 +141,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 5,
     backgroundColor: 'white',
-    borderRadius: 30,
+    borderRadius: 10,
     paddingTop: 20,
     paddingBottom: 20,
     paddingLeft: 10,
@@ -138,7 +165,6 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 40,
     backgroundColor: 'gray',
-    // alignSelf: 'center',
   },
 });
 

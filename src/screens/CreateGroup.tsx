@@ -1,81 +1,156 @@
 /* eslint-disable react-native/no-inline-styles */
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
-import { Text, TextInput } from 'react-native-paper';
+import { Text, TextInput, Button } from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-
 import database from '@react-native-firebase/database';
 import { useAuth } from '../context/AuthContext';
 import { createUniqueId } from '../utils/commonFunctions';
+import LottieView from 'lottie-react-native';
 
 const CreateGroup = ({ navigation }: any) => {
   const [groupName, setGroupName] = useState('');
-
+  const [description, setDescription] = useState('');
+  const [loading, setLoading] = useState(false); // To handle the loading state
   const { user }: any = useAuth();
 
+  const textInputRef = useRef<TextInput | null>(null);
+
+  useEffect(() => {
+    textInputRef.current?.focus();
+  }, []);
+
   const handleCreateGroup = () => {
+    setLoading(true); // Start loading animation
+
+    const groupData = {
+      groupId: createUniqueId(),
+      groupName: groupName.trim(),
+      description: description.trim(),
+    };
+
     const userGroupsRef = database().ref(`/users/${user?.id}/groups`);
     userGroupsRef
       .once('value')
       .then((snapshot) => {
         const groups = snapshot.val() ? snapshot.val() : []; // Get existing groups or initialize as an empty array
-        console.log({ groups });
         userGroupsRef
-          .set([...groups, { groupId: createUniqueId(), groupName: groupName }]) // Set the updated groups array with the new group added
-          .then(() => console.log('Group added successfully.'));
+          .set([...groups, groupData]) // Set the updated groups array with the new group added
+          .then(() => {
+            setLoading(false); // Stop loading animation
+            console.log('Group added successfully:', groupData);
+            navigation.goBack(); // Go back after success
+          });
       })
-      .catch((error) => console.error('Error updating groups:', error));
-
-    setGroupName('');
-
-    navigation.goBack();
+      .catch((error) => {
+        setLoading(false); // Stop loading animation
+        console.error('Error updating groups:', error);
+      });
   };
 
   return (
-    <View>
-      <View style={{ margin: 15 }}>
+    <View style={styles.container}>
+      {/* Heading */}
+      <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <MaterialCommunityIcons name="close" size={30} color={'#4A249D'} />
+          <MaterialCommunityIcons name="arrow-left" size={24} color="#4A249D" />
         </TouchableOpacity>
+        <Text style={styles.heading}>Create Group</Text>
       </View>
-      <View style={styles.container}>
-        <View style={styles.inputs}>
-          <Text style={styles.text}>Enter Group Name</Text>
-          <TextInput onChangeText={(e) => setGroupName(e)} />
-        </View>
+
+      {/* Lottie Animation */}
+      <View style={{ alignItems: 'center' }}>
+        <LottieView
+          source={require('../assets/animations/groupAnimation.json')}
+          autoPlay
+          loop
+          style={styles.animation}
+        />
       </View>
-      <TouchableOpacity
-        style={styles.button}
-        disabled={!groupName}
+
+      <View style={styles.inputs}>
+        <TextInput
+          label="Group Name"
+          value={groupName}
+          onChangeText={(value) => setGroupName(value)}
+          placeholder="Enter group name"
+          mode="outlined"
+          style={styles.input}
+          theme={{ colors: { primary: '#4A249D' } }}
+          ref={textInputRef}
+        />
+        <TextInput
+          label="Description"
+          value={description}
+          onChangeText={(value) => setDescription(value)}
+          placeholder="Enter description"
+          multiline
+          mode="outlined"
+          style={styles.input}
+          theme={{ colors: { primary: '#4A249D' } }}
+        />
+      </View>
+
+      {/* Create Group Button */}
+      <Button
+        mode="contained"
         onPress={handleCreateGroup}
+        disabled={groupName.trim().length < 3 || loading}
+        loading={loading}
+        style={[
+          styles.button,
+          {
+            backgroundColor:
+              groupName.trim().length < 3 || loading ? '#B0B0B0' : '#4A249D',
+          },
+        ]}
+        labelStyle={{
+          color: groupName.trim().length < 3 || loading ? '#808080' : '#FFFFFF',
+        }}
       >
-        <View>
-          <Text style={styles.text}>Create Group</Text>
-        </View>
-      </TouchableOpacity>
+        {loading ? 'Creating...' : 'Create Group'}
+      </Button>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { marginTop: 100, marginHorizontal: 10 },
-  inputs: { gap: 20, marginBottom: 30 },
-  input: {
-    backgroundColor: 'transparent', // Removes background to only show the border
+  container: {
+    flexGrow: 1,
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 20,
+    paddingTop: 30,
   },
-  text: { fontSize: 20, color: '#4A249D' },
-  div: { flexDirection: 'row', gap: 10, marginBottom: 30 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 50,
+  },
+  heading: {
+    fontSize: 22,
+    color: '#4A249D',
+    marginLeft: 10,
+    fontWeight: 'bold',
+  },
+  animation: {
+    width: 200,
+    height: 200,
+    marginBottom: 40,
+  },
+  inputs: {
+    width: '100%',
+    gap: 20,
+    marginBottom: 30,
+  },
+  input: {
+    backgroundColor: 'transparent',
+  },
   button: {
-    margin: 20,
     borderRadius: 5,
     height: 50,
-    borderColor: 'grey',
-    borderWidth: 1,
+    width: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#4A249D',
-    fontSize: 20,
-    color: '#4A249D',
   },
 });
 

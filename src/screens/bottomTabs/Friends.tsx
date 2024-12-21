@@ -2,8 +2,9 @@
 import React from 'react';
 import { FlatList, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { SheetManager } from 'react-native-actions-sheet';
-import { Avatar, Button, FAB, TouchableRipple } from 'react-native-paper';
+import { Avatar, Button, TouchableRipple } from 'react-native-paper';
 import { useAuth } from '../../context/AuthContext';
+import LottieView from 'lottie-react-native';
 
 const ListEmptyComponent = () => (
   <View
@@ -11,9 +12,17 @@ const ListEmptyComponent = () => (
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
-      marginTop: 250,
+      marginTop: 100,
     }}
   >
+    <View style={{ alignItems: 'center' }}>
+      <LottieView
+        source={require('../../assets/animations/i.json')}
+        autoPlay
+        loop
+        style={styles.animation}
+      />
+    </View>
     <Text style={{ fontSize: 20 }}>No Friends yet :(</Text>
     <Button
       style={{ margin: 20 }}
@@ -54,17 +63,17 @@ const Friends = () => {
         // refreshing={isRefreshing}
         ListEmptyComponent={ListEmptyComponent}
         data={user?.friendsList || []}
-        renderItem={({ item }) => (
+        renderItem={({ item }: any) => (
           <Item title={item.name} note={item.note || ''} />
         )}
-        keyExtractor={(item) => item._id}
+        keyExtractor={(item: any) => item._id}
       />
-      <FAB
+      {/* <FAB
         icon="share"
         style={styles.fab}
         onPress={() => SheetManager.show('inviteFriends')}
         label="Invite/Add friend"
-      />
+      /> */}
     </SafeAreaView>
   );
 };
@@ -74,6 +83,11 @@ export default Friends;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  animation: {
+    width: 200,
+    height: 200,
+    marginBottom: 40,
   },
   fab: {
     position: 'absolute',

@@ -60,6 +60,7 @@ const TabNavigator = () => {
               size={26}
             />
           ),
+          headerShown: false,
         }}
       />
     </Tab.Navigator>

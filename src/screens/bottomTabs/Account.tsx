@@ -12,7 +12,7 @@ const Account = ({ navigation }: any) => {
     { title: 'My Profile', icon: 'account', navigateTo: '' },
     { title: 'Settings', icon: 'cog', navigateTo: '' },
     { title: 'FAQ', icon: 'help-circle-outline', navigateTo: 'faq' },
-    { title: 'About App', icon: 'information-outline', navigateTo: '' },
+    { title: 'About App', icon: 'information-outline', navigateTo: 'about' },
   ];
 
   return (

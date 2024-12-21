@@ -11,6 +11,7 @@ import GroupDetail from './src/screens/GroupDetail';
 import InviteFriends from './src/screens/InviteFriends';
 import SplashScreen from './src/screens/SplashScreen'; // Import SplashScreen
 import FAQ from './src/screens/Faq';
+import AboutApp from './src/screens/About';
 
 const App = () => {
   const Stack = createNativeStackNavigator();
@@ -38,6 +39,7 @@ const App = () => {
             <Stack.Screen name="groupDetail" component={GroupDetail} />
             <Stack.Screen name="inviteFriends" component={InviteFriends} />
             <Stack.Screen name="faq" component={FAQ} />
+            <Stack.Screen name="about" component={AboutApp} />
           </>
         ) : (
           <Stack.Screen name="Login" component={Login} />

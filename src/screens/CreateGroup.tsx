@@ -39,7 +39,7 @@ const CreateGroup = ({ navigation }: any) => {
           .then(() => {
             setLoading(false); // Stop loading animation
             console.log('Group added successfully:', groupData);
-            navigation.goBack(); // Go back after success
+            navigation.navigate('addMembers'); // Go back after success
           });
       })
       .catch((error) => {
@@ -48,6 +48,8 @@ const CreateGroup = ({ navigation }: any) => {
       });
   };
 
+  //File Upload handler..
+  const handleProfilePhotoUploader = () => {};
   return (
     <View style={styles.container}>
       {/* Heading */}
@@ -67,7 +69,14 @@ const CreateGroup = ({ navigation }: any) => {
           style={styles.animation}
         />
       </View>
-
+      <Button
+        onPress={handleProfilePhotoUploader}
+        mode="outlined"
+        loading={loading}
+        style={[styles.addProfile]}
+      >
+        {'Upload Group Photo'}
+      </Button>
       <View style={styles.inputs}>
         <TextInput
           label="Group Name"
@@ -135,7 +144,6 @@ const styles = StyleSheet.create({
   animation: {
     width: 200,
     height: 200,
-    marginBottom: 40,
   },
   inputs: {
     width: '100%',
@@ -151,6 +159,17 @@ const styles = StyleSheet.create({
     width: '100%',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  addProfile: {
+    borderRadius: 5,
+    height: 40,
+    width: 180,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+    marginBottom: 40,
+    marginLeft: 'auto',
+    marginRight: 'auto',
+    borderColor: '#4A249D',
   },
 });
 

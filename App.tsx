@@ -12,6 +12,7 @@ import InviteFriends from './src/screens/InviteFriends';
 import SplashScreen from './src/screens/SplashScreen'; // Import SplashScreen
 import FAQ from './src/screens/Faq';
 import AboutApp from './src/screens/About';
+import AddGroupMembers from './src/screens/AddGroupMembers';
 
 const App = () => {
   const Stack = createNativeStackNavigator();
@@ -36,6 +37,7 @@ const App = () => {
             <Stack.Screen name="HomeScreen" component={TabNavigator} />
             <Stack.Screen name="AddExpense" component={AddExpense} />
             <Stack.Screen name="createGroup" component={CreateGroup} />
+            <Stack.Screen name="addMembers" component={AddGroupMembers} />
             <Stack.Screen name="groupDetail" component={GroupDetail} />
             <Stack.Screen name="inviteFriends" component={InviteFriends} />
             <Stack.Screen name="faq" component={FAQ} />

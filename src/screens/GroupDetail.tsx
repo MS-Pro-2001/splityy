@@ -12,10 +12,9 @@ import {
 import { Text, FAB, Divider } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { truncateText } from '../utils/commonFunctions';
 
 // Utility function to truncate text to 30 characters and append ellipses
-const truncateText = (text: string, maxLength: number = 30) =>
-  text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
 
 const expensesData = [
   {
@@ -97,7 +96,7 @@ const ListEmptyComponent = () => (
 );
 const GroupDetail = ({ route, navigation }: any) => {
   const { groupName } = route.params;
-  const dummyImageUrl = 'https://picsum.photos/200/300';
+  const dummyImageUrl = 'https://picsum.photos/205/300';
   const [fabExtended, setFabExtended] = useState(true); // Tracks the FAB state
   const [activeTab, setActiveTab] = useState<'expenses' | 'friends'>(
     'expenses'

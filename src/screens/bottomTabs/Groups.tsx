@@ -2,15 +2,10 @@
 /* eslint-disable react/no-unstable-nested-components */
 import React from 'react';
 import { FlatList, SafeAreaView, StyleSheet, Text, View } from 'react-native';
-import {
-  Avatar,
-  Button,
-  Divider,
-  FAB,
-  TouchableRipple,
-} from 'react-native-paper';
+import { Avatar, Button, FAB, TouchableRipple } from 'react-native-paper';
 import { useAuth } from '../../context/AuthContext';
 import LottieView from 'lottie-react-native';
+import { truncateText } from '../../utils/commonFunctions';
 
 const Item = ({ title, navigation, groupId }: any) => (
   <TouchableRipple
@@ -18,13 +13,12 @@ const Item = ({ title, navigation, groupId }: any) => (
     onPress={() =>
       navigation.navigate('groupDetail', { groupName: title, groupId })
     }
-    // rippleColor="rgba(0, 0, 0, .32)"
   >
     <>
-      <Avatar.Text label={title?.[0]?.toUpperCase()} size={48} />
+      <Avatar.Text label={title?.[0]?.toUpperCase()} size={40} />
 
       <View>
-        <Text style={styles.title}>{title}</Text>
+        <Text style={styles.title}>{truncateText(title)}</Text>
       </View>
     </>
     {/* <View style={styles.item}>
@@ -139,11 +133,11 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 10,
     backgroundColor: 'white',
     borderRadius: 10,
-    paddingTop: 20,
-    paddingBottom: 20,
+    paddingTop: 10,
+    paddingBottom: 10,
     paddingLeft: 10,
     marginVertical: 10,
     marginHorizontal: 16,
@@ -157,7 +151,7 @@ const styles = StyleSheet.create({
     elevation: 5, // For Android shadow
   },
   title: {
-    fontSize: 22,
+    fontSize: 18,
     color: 'black',
   },
   grpImg: {

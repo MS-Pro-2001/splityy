@@ -1,22 +1,35 @@
 import React, { useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { TouchableOpacity, View, Image, ScrollView } from 'react-native';
-import { Text, TextInput, Divider, TouchableRipple } from 'react-native-paper';
+import {
+  Text,
+  TextInput,
+  Divider,
+  TouchableRipple,
+  Avatar,
+} from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome6';
 import { useAuth } from '../context/AuthContext';
 
 const AddGroupMembers = ({ navigation }: any) => {
-  const [selectedMembers] = useState([
-    { id: 1, name: 'Mridul Sehgal', image: 'https://i.pravatar.cc/150?img=8' },
-    { id: 2, name: 'Anna Belle', image: 'https://i.pravatar.cc/150?img=2' },
-    { id: 3, name: 'Shyam', image: 'https://i.pravatar.cc/150?img=3' },
-    { id: 4, name: 'Anuradha', image: 'https://i.pravatar.cc/150?img=4' },
-    { id: 5, name: 'Anuradha', image: 'https://i.pravatar.cc/150?img=4' },
-    { id: 6, name: 'Anuradha', image: 'https://i.pravatar.cc/150?img=4' },
-  ]);
+  const [selectedMembers, setSelectedMembers]: [any, any] = useState([]);
   const { user }: any = useAuth();
+
+  const toggleSelection = (member: any) => {
+    const userId = member._id;
+    if (selectedMembers.some((selected: any) => selected._id === userId)) {
+      setSelectedMembers((prev: any) =>
+        prev.filter((selected: any) => selected._id !== userId)
+      );
+    } else {
+      setSelectedMembers((prev: any) => [...prev, member]);
+    }
+  };
+  const isUserSelected = (id: any) => {
+    return selectedMembers.some((member: any) => member?._id === id);
+  };
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
@@ -46,10 +59,13 @@ const AddGroupMembers = ({ navigation }: any) => {
           style={styles.selectedMembersContainer}
           contentContainerStyle={styles.selectedMembersContent}
         >
-          {selectedMembers.map((member) => (
+          {selectedMembers.map((member: any) => (
             <View key={member.id} style={styles.memberItem}>
               <View style={styles.avatarContainer}>
-                <TouchableOpacity style={styles.cancelIconContainer}>
+                <TouchableOpacity
+                  onPress={() => toggleSelection(member)}
+                  style={styles.cancelIconContainer}
+                >
                   <MaterialCommunityIcons
                     name="close-box"
                     size={18}
@@ -58,10 +74,19 @@ const AddGroupMembers = ({ navigation }: any) => {
                   />
                 </TouchableOpacity>
                 <View style={styles.avatar}>
-                  <Image
-                    source={{ uri: member.image }}
-                    style={styles.avatarImage}
-                  />
+                  {member?.image ? (
+                    <Image
+                      source={{ uri: member.image }}
+                      style={styles.avatarImage}
+                    />
+                  ) : (
+                    <Avatar.Text
+                      label={member.name?.[0]?.toUpperCase()}
+                      size={55}
+                      color="#675B97"
+                      style={styles.avatarText}
+                    />
+                  )}
                 </View>
               </View>
               <Text
@@ -84,36 +109,60 @@ const AddGroupMembers = ({ navigation }: any) => {
           showsVerticalScrollIndicator={false}
           style={styles.listContainer}
         >
-          {user?.friendsList.map((participant: any) => (
-            <View key={participant._id} style={styles.participantItemContainer}>
-              <TouchableRipple
-                onPress={() => {}}
-                rippleColor="rgba(74, 36, 157, 0.1)"
-                style={styles.participantItem}
+          {user?.friendsList.map((participant: any) => {
+            const isSelected = isUserSelected(participant._id);
+            return (
+              <View
+                key={participant._id}
+                style={{
+                  ...styles.participantItemContainer,
+                  ...(isSelected && { elevation: 0 }),
+                }}
               >
-                <View style={styles.participantInner}>
-                  <View style={styles.participantInfo}>
-                    <View style={styles.participantAvatar}>
-                      <Image
-                        source={{ uri: participant.image }}
-                        style={styles.avatarImage}
+                <TouchableRipple
+                  onPress={() => toggleSelection(participant)}
+                  rippleColor="rgba(74, 36, 157, 0.1)"
+                  style={styles.participantItem}
+                >
+                  <View style={styles.participantInner}>
+                    <View style={styles.participantInfo}>
+                      <View style={styles.participantAvatar}>
+                        {participant.image ? (
+                          <Image
+                            source={{ uri: participant.image }}
+                            style={styles.avatarImage}
+                          />
+                        ) : (
+                          <Avatar.Text
+                            label={participant.name?.[0]?.toUpperCase()}
+                            size={45}
+                            color="#675B97"
+                            style={styles.avatarText}
+                          />
+                        )}
+                      </View>
+                      <Text
+                        variant="bodyLarge"
+                        style={{
+                          ...styles.participantName,
+                          ...(isSelected && { color: '#919191' }),
+                        }}
+                      >
+                        {participant.name}
+                      </Text>
+                    </View>
+                    <View style={styles.addIconContainer}>
+                      <MaterialCommunityIcons
+                        name={isSelected ? 'minus-circle' : 'plus-circle'}
+                        size={28}
+                        color={isSelected ? '#CBB3FF' : '#4A249D'}
                       />
                     </View>
-                    <Text variant="bodyLarge" style={styles.participantName}>
-                      {participant.name}
-                    </Text>
                   </View>
-                  <View style={styles.addIconContainer}>
-                    <MaterialCommunityIcons
-                      name="plus-circle"
-                      size={28}
-                      color="#4A249D"
-                    />
-                  </View>
-                </View>
-              </TouchableRipple>
-            </View>
-          ))}
+                </TouchableRipple>
+              </View>
+            );
+          })}
         </ScrollView>
       </View>
     </SafeAreaView>
@@ -225,13 +274,13 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginBottom: 12,
     borderRadius: 12,
-    elevation: 2,
-    shadowColor: '#000',
+    elevation: 3,
+    shadowColor: '#4A249D',
     shadowOffset: {
       width: 0,
       height: 1,
     },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.2,
     shadowRadius: 2,
     backgroundColor: '#FFFFFF',
     overflow: 'hidden',
@@ -261,13 +310,16 @@ const styles = StyleSheet.create({
   },
   participantName: {
     color: '#3D3D3D',
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: 18,
+    fontWeight: '600',
   },
   addIconContainer: {
     width: 36,
     height: 36,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  avatarText: {
+    backgroundColor: '#EBE8F6',
   },
 });

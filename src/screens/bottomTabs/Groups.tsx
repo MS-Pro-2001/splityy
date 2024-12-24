@@ -3,15 +3,16 @@
 import React from 'react';
 import { FlatList, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { Avatar, Button, FAB, TouchableRipple } from 'react-native-paper';
-import { useAuth } from '../../context/AuthContext';
 import LottieView from 'lottie-react-native';
 import { truncateText } from '../../utils/commonFunctions';
+import database from '@react-native-firebase/database';
+import { useAuth } from '../../context/AuthContext';
 
-const Item = ({ title, navigation, groupId }: any) => (
+const Item = ({ title, navigation, groupId, desc }: any) => (
   <TouchableRipple
     style={styles.item}
     onPress={() =>
-      navigation.navigate('groupDetail', { groupName: title, groupId })
+      navigation.navigate('groupDetail', { groupName: title, groupId, desc })
     }
   >
     <>
@@ -19,6 +20,7 @@ const Item = ({ title, navigation, groupId }: any) => (
 
       <View>
         <Text style={styles.title}>{truncateText(title)}</Text>
+        <Text style={styles.subtitle}>{truncateText(desc)}</Text>
       </View>
     </>
     {/* <View style={styles.item}>
@@ -31,10 +33,41 @@ const Item = ({ title, navigation, groupId }: any) => (
 
 const Groups = ({ navigation }: any) => {
   const [state, setState] = React.useState({ open: false });
-
-  const onStateChange = ({ open }: any) => setState({ open });
+  const [grpData, setGrpData] = React.useState([]);
 
   const { user }: any = useAuth();
+
+  console.log({ grpData });
+
+  React.useEffect(() => {
+    const groupsRef = database()
+      .ref('/groups')
+      .orderByChild('createdBy')
+      .equalTo(user?.id);
+
+    const onValueChange = groupsRef.on('value', (snapshot) => {
+      const res = snapshot.val();
+
+      if (!res) {
+        console.log('No groups found');
+        setGrpData([]);
+        return;
+      }
+
+      const data: any = Object.keys(res)
+        .map((key) => ({
+          groupId: key,
+          ...res[key], // Spread the data to include group properties
+        }))
+        .sort((a, b) => b.createdAt - a.createdAt);
+      setGrpData(data);
+    });
+
+    // Clean up the listener when the component unmounts
+    return () => groupsRef.off('value', onValueChange);
+  }, [user?.id]);
+
+  const onStateChange = ({ open }: any) => setState({ open });
 
   // const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -71,12 +104,13 @@ const Groups = ({ navigation }: any) => {
             </Button>
           </View>
         )}
-        data={user?.groups || []}
+        data={grpData || []}
         renderItem={({ item }: any) => (
           <Item
             title={item.groupName}
             navigation={navigation}
             groupId={item.groupId}
+            desc={item.description}
           />
         )}
         keyExtractor={(item: any) => item.groupId}
@@ -153,6 +187,10 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     color: 'black',
+  },
+  subtitle: {
+    fontSize: 12,
+    color: 'gray',
   },
   grpImg: {
     width: 50,

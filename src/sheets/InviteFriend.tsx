@@ -9,8 +9,11 @@ import { useAuth } from '../context/AuthContext';
 import database from '@react-native-firebase/database';
 import { createUniqueId } from '../utils/commonFunctions';
 import sendEmail from 'react-native-email';
+import useFriendListService from '../store/friends';
 function InviteFriends() {
   const { user }: any = useAuth();
+
+  const { addFriend }: any = useFriendListService();
 
   // console.log({ user });
   const [loading, setLoading] = useState(false); // Track loading state
@@ -18,48 +21,31 @@ function InviteFriends() {
     control,
     handleSubmit,
     reset,
-    getValues,
     formState: { errors },
   }: any = useForm({
     defaultValues: {
       name: '',
-      contactInfo: '',
-      note: '',
+      email: '',
     },
   });
-  const onSubmit = (formData: any) => {
+  const onSubmit: any = async (formData: any) => {
     setLoading(true);
 
-    const to = ['mridul.sehgalwork@gmail.com']; // string or array of email addresses
-    sendEmail(to, {
-      // Optional additional arguments
-      cc: [`${getValues('contactInfo')}`], // string or array of email addresses
-      //   bcc: 'mee@mee.com', // string or array of email addresses
-      subject: 'Show how to use',
-      body: 'Some body right here',
-      checkCanOpen: false, // Call Linking.canOpenURL prior to Linking.openURL
-    }).catch(console.error);
+    try {
+      await addFriend({
+        addedBy: user?.id,
+        friend: formData?.email,
+        createdAt: Date.now(),
+        isRequestAccepted: false,
+      });
 
-    database()
-      .ref(`/users/${user?.id}`)
-      .update({
-        friendsList: [
-          ...(user?.friendsList || []),
-          {
-            _id: createUniqueId('friend'),
-            name: formData.name,
-            contactInfo: formData?.contactInfo,
-            note: formData?.note,
-          },
-        ],
-      })
-      .then(() => {
-        setLoading(false);
-        reset();
-        SheetManager.hide('inviteFriends');
-        console.log('Friend Invited Successfully');
-      })
-      .catch((error) => console.error('Error inviting friend:', error));
+      setLoading(false);
+      reset();
+      SheetManager.hide('inviteFriends');
+      console.log('Friend Invited Successfully');
+    } catch (error) {
+      console.log('err', error);
+    }
   };
   return (
     <ActionSheet
@@ -88,7 +74,7 @@ function InviteFriends() {
 
         <CustomInput
           control={control}
-          name="contactInfo"
+          name="email"
           validationRules={{
             required: {
               value: true,
@@ -100,14 +86,6 @@ function InviteFriends() {
             },
           }}
           placeholder={'Email*'}
-          errors={errors}
-          keyboardType="text"
-        />
-
-        <CustomInput
-          control={control}
-          name="note"
-          placeholder={'Note'}
           errors={errors}
           keyboardType="text"
         />
@@ -139,7 +117,7 @@ const styles = StyleSheet.create({
   },
   container: {
     margin: 20,
-    gap: 50,
+    gap: 25,
   },
   input: {
     borderBottomWidth: 1,

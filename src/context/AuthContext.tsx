@@ -96,34 +96,63 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
       console.log(error);
     }
   };
-  const fetchUserFromStorage: any = async () => {
+  const fetchUserFromStorage = async () => {
     try {
       const userData = await AsyncStorage.getItem('userinfo');
-      // console.log({ userData });
       return userData ? JSON.parse(userData) : null;
     } catch (error) {
       console.error('Error fetching user from storage:', error);
       return null;
     }
   };
-
-  const logout: any = async () => {
+  const logout = async () => {
     try {
-      await GoogleSignin.revokeAccess();
-      await GoogleSignin.signOut();
-      setUser(null);
-      await AsyncStorage.removeItem('userinfo'); // Clear user data from AsyncStorage
+      const isSignedIn = GoogleSignin.getCurrentUser(); // Check if the user is signed in
+      if (isSignedIn) {
+        console.log('Signing out...');
+        await GoogleSignin.revokeAccess(); // Revoke access token
+        await GoogleSignin.signOut(); // Sign out from Google
+        setUser(null); // Clear user state
+        await AsyncStorage.removeItem('userinfo'); // Clear user data from AsyncStorage
+        console.log('User signed out successfully');
+      } else {
+        console.log('No user is signed in');
+      }
     } catch (err) {
-      console.log(err);
+      console.log('Error during sign out:', err);
+    }
+  };
+
+  const restoreSession = async () => {
+    try {
+      // Attempt to silently sign in
+      const userInfo = await GoogleSignin.signInSilently();
+      console.log('Google session restored:', userInfo);
+      return userInfo?.data;
+    } catch (error) {
+      console.log('No valid Google session to restore:', error);
+      return null;
     }
   };
 
   useEffect(() => {
     const checkUser = async () => {
       try {
-        const loggedInUser = await fetchUserFromStorage();
-        if (loggedInUser) {
-          setUser(loggedInUser);
+        const storedUser = await fetchUserFromStorage();
+
+        if (storedUser) {
+          // Restore Google session
+          const restoredSession = await restoreSession();
+
+          if (restoredSession) {
+            // If Google session is valid, set the user
+            setUser(storedUser);
+          } else {
+            // If session restoration fails, clear stored user
+            await AsyncStorage.removeItem('userinfo');
+            setUser(null);
+            console.log('Cleared stored user due to invalid session');
+          }
         }
       } catch (error) {
         console.error('Error checking authentication:', error);

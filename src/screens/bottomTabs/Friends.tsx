@@ -5,7 +5,7 @@ import { SheetManager } from 'react-native-actions-sheet';
 import { Avatar, Button, TouchableRipple } from 'react-native-paper';
 import { useAuth } from '../../context/AuthContext';
 import LottieView from 'lottie-react-native';
-
+import database from '@react-native-firebase/database';
 const ListEmptyComponent = () => (
   <View
     style={{
@@ -34,7 +34,7 @@ const ListEmptyComponent = () => (
     </Button>
   </View>
 );
-const Item = ({ title, note }: any) => (
+const Item = ({ title }: any) => (
   <TouchableRipple
     style={styles.item}
     onPress={
@@ -48,25 +48,53 @@ const Item = ({ title, note }: any) => (
 
       <View>
         <Text style={styles.title}>{title}</Text>
-        {note && <Text>{note}</Text>}
       </View>
     </>
   </TouchableRipple>
 );
 
 const Friends = () => {
+  const [friendList, setFriendList] = React.useState();
   const { user }: any = useAuth();
+
+  console.log({ friendList });
+
+  React.useEffect(() => {
+    const friendListRef: any = database()
+      .ref('/friendList')
+      .orderByChild('addedBy')
+      .equalTo(user?.id);
+
+    const onValueChange = friendListRef.on('value', (snapshot: any) => {
+      const res = snapshot.val();
+
+      if (!res) {
+        console.log('No groups found');
+        setFriendList([]);
+        return;
+      }
+
+      const data: any = Object.keys(res)
+        .map((key) => ({
+          id: key,
+          ...res[key], // Spread the data to include group properties
+        }))
+        .sort((a, b) => b.createdAt - a.createdAt);
+      setFriendList(data);
+    });
+
+    // Clean up the listener when the component unmounts
+    return () => friendListRef.off('value', onValueChange);
+  }, [user?.id]);
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <FlatList
         // onRefresh={() => setIsRefreshing(true)}
         // refreshing={isRefreshing}
         ListEmptyComponent={ListEmptyComponent}
-        data={user?.friendsList || []}
-        renderItem={({ item }: any) => (
-          <Item title={item.name} note={item.note || ''} />
-        )}
-        keyExtractor={(item: any) => item._id}
+        data={friendList || []}
+        renderItem={({ item }: any) => <Item title={item.friend} />}
+        keyExtractor={(item: any) => item.id}
       />
       {/* <FAB
         icon="share"
@@ -117,7 +145,7 @@ const styles = StyleSheet.create({
     elevation: 5, // For Android shadow
   },
   title: {
-    fontSize: 22,
+    fontSize: 18,
     color: 'black',
   },
   grpImg: {

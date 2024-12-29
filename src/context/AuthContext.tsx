@@ -8,6 +8,7 @@ import React, {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import database from '@react-native-firebase/database';
+import { createUniqueId } from '../utils/commonFunctions';
 
 type UserType = {
   // Define the structure of your user object
@@ -71,36 +72,53 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
     try {
       await GoogleSignin.hasPlayServices();
       const userInfo: any = await GoogleSignin.signIn();
-
+      const email = userInfo?.data?.user?.email;
       // Extract the user ID
-      const userId = userInfo?.data?.user?.id;
 
       // Fetch user data from Firebase using user ID
-      const userRef = database().ref(`users/${userId}`);
-      userRef.on('value', (snapshot) => {
-        const userData = snapshot.val();
+      const userRef = database()
+        .ref('user')
+        .orderByChild('email')
+        .equalTo(email);
 
-        if (userData) {
-          // Update user data in context and AsyncStorage
-          const loggedInUserData: UserType = {
-            ...userData,
-          };
+      const snapshot = await userRef.once('value');
+      const userData = snapshot.val();
 
-          setUser(loggedInUserData);
-          AsyncStorage.setItem('userinfo', JSON.stringify(loggedInUserData));
-        } else {
-          const payload = {
-            ...userInfo?.data?.user,
-            createdAt: `${new Date()}`,
-            updatedAt: `${new Date()}`,
-            isDeleted: false,
-            isVerified: true,
-          };
-          database()
-            .ref(`users/${userId}`)
-            .set({ ...(payload ?? {}) });
-        }
-      });
+      if (userData) {
+        // Firebase returns an object where keys are user IDs
+        const userKey = Object.keys(userData)[0];
+        const userDetails = userData[userKey];
+
+        // Update user data in context and AsyncStorage
+        const loggedInUserData: UserType = {
+          ...userDetails,
+        };
+
+        setUser(loggedInUserData);
+        await AsyncStorage.setItem(
+          'userinfo',
+          JSON.stringify(loggedInUserData)
+        );
+      } else {
+        // Create a new user if no data exists
+        const userId = createUniqueId();
+        const payload = {
+          ...userInfo?.data?.user,
+          googleId: userInfo?.data?.user?.id,
+          id: userId,
+          createdAt: `${new Date()}`,
+          updatedAt: `${new Date()}`,
+          isDeleted: false,
+          isVerified: true,
+        };
+
+        // Save new user to Firebase
+        await database().ref(`users/${userId}`).set(payload);
+
+        // Update context and AsyncStorage
+        setUser(payload);
+        await AsyncStorage.setItem('userinfo', JSON.stringify(payload));
+      }
     } catch (error: any) {
       console.log(error);
     }

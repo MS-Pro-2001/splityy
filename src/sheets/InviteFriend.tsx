@@ -169,7 +169,7 @@ const styles = StyleSheet.create({
   },
   container: {
     padding: 20,
-    gap: 25,
+    gap: 8,
     backgroundColor: '#ffffff',
     flexGrow: 1, // Ensure ScrollView covers full height
   },

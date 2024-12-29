@@ -10,14 +10,17 @@ import { PaperProvider } from 'react-native-paper';
 import { AuthProvider } from './src/context/AuthContext';
 import { SheetProvider } from 'react-native-actions-sheet';
 import './src/components/sheets.tsx';
+import { SnackbarProvider } from './src/context/SnackbarContext.tsx';
 
 const Main = () => (
   <PaperProvider>
-    <AuthProvider>
-      <SheetProvider>
-        <App />
-      </SheetProvider>
-    </AuthProvider>
+    <SnackbarProvider>
+      <AuthProvider>
+        <SheetProvider>
+          <App />
+        </SheetProvider>
+      </AuthProvider>
+    </SnackbarProvider>
   </PaperProvider>
 );
 

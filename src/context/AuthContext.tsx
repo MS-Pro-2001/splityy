@@ -9,6 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import database from '@react-native-firebase/database';
 import { createUniqueId } from '../utils/commonFunctions';
+import { useSnackbar } from './SnackbarContext';
 
 type UserType = {
   // Define the structure of your user object
@@ -34,6 +35,7 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({
   children,
 }: any) => {
+  const { showMessage } = useSnackbar();
   const [user, setUser] = useState<any>(null);
   const [isUserLoading, setIsUserLoading] = useState<any>(true);
 
@@ -100,6 +102,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
           'userinfo',
           JSON.stringify(loggedInUserData)
         );
+        showMessage('SignIn Successfully', 2000);
       } else {
         // Create a new user if no data exists
         const userId = createUniqueId();
@@ -119,6 +122,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
         // Update context and AsyncStorage
         setUser(payload);
         await AsyncStorage.setItem('userinfo', JSON.stringify(payload));
+        showMessage('SignedIn Successfully!!', 2000);
       }
     } catch (error: any) {
       console.log(error);

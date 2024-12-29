@@ -2,9 +2,11 @@ import React from 'react';
 import { Avatar, Text, List } from 'react-native-paper';
 import { useAuth } from '../../context/AuthContext';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { useSnackbar } from '../../context/SnackbarContext';
 
 const Account = ({ navigation }: any) => {
   const { logout, user }: any = useAuth();
+  const { showMessage } = useSnackbar();
 
   console.log({ user });
 
@@ -63,7 +65,10 @@ const Account = ({ navigation }: any) => {
       {/* Logout */}
       <TouchableOpacity
         style={[styles.menuItem, styles.logoutSection]}
-        onPress={() => logout()}
+        onPress={() => {
+          showMessage('Logout Successfully!!', 2000);
+          logout();
+        }}
       >
         <List.Icon icon="logout" style={styles.icon} />
         <Text style={styles.menuText}>Logout</Text>

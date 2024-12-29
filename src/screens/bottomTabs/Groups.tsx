@@ -7,6 +7,7 @@ import LottieView from 'lottie-react-native';
 import { truncateText } from '../../utils/commonFunctions';
 import database from '@react-native-firebase/database';
 import { useAuth } from '../../context/AuthContext';
+import { useSnackbar } from '../../context/SnackbarContext';
 
 const Item = ({ title, navigation, groupId, desc }: any) => (
   <TouchableRipple
@@ -32,6 +33,7 @@ const Item = ({ title, navigation, groupId, desc }: any) => (
 );
 
 const Groups = ({ navigation }: any) => {
+  const { showMessage } = useSnackbar();
   const [state, setState] = React.useState({ open: false });
   const [grpData, setGrpData] = React.useState([]);
 
@@ -98,7 +100,7 @@ const Groups = ({ navigation }: any) => {
               style={{ margin: 20 }}
               icon="plus"
               mode="contained"
-              onPress={() => navigation.navigate('createGroup')}
+              onPress={() => showMessage('Group created successfully!!', 2000)}
             >
               Create Group
             </Button>

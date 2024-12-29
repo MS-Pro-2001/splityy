@@ -16,7 +16,7 @@ const useFriendListService = () => {
    */
   const addFriend = async (friendData: FriendType): Promise<void> => {
     try {
-      await database().ref(`/friendList/${createUniqueId()}`).set(friendData);
+      await database().ref(`/friendList/${friendData?.id}`).set(friendData);
       console.log('Friend added successfully:', friendData);
     } catch (error) {
       console.error('Error adding friend:', error);

@@ -1,26 +1,42 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-// import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useAuth } from '../context/AuthContext';
 import { Avatar } from 'react-native-paper';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+
 interface HeaderProps {
   route: {
     name: string;
   };
   navigation: any;
+  notificationCount: number; // Pass notification count as a prop
 }
 
-const CustomHeader: React.FC<HeaderProps> = ({ route, navigation }) => {
+const CustomHeader: React.FC<HeaderProps> = ({
+  route,
+  navigation,
+  notificationCount,
+}) => {
   const { user }: any = useAuth();
-  // console.log(user);
+
   return (
     <View style={styles.headerContainer}>
       <Text style={styles.title}>{route.name}</Text>
 
       <View style={styles.rightSection}>
-        {/* <TouchableOpacity onPress={() => console.log('hello')}>
-          <MaterialCommunityIcons name="magnify" size={30} color={'#4A249D'} />
-        </TouchableOpacity> */}
+        {/* Notification Bell Icon with Badge */}
+        <TouchableOpacity onPress={() => navigation.navigate('Notifications')}>
+          <View style={styles.notificationIcon}>
+            <MaterialCommunityIcons name="bell" size={25} color="#4A249D" />
+            {notificationCount > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{notificationCount}</Text>
+              </View>
+            )}
+          </View>
+        </TouchableOpacity>
+
+        {/* Profile Avatar */}
         <TouchableOpacity onPress={() => navigation.navigate('Account')}>
           <View style={styles.avatarCircle}>
             {user?.photo ? (
@@ -31,7 +47,6 @@ const CustomHeader: React.FC<HeaderProps> = ({ route, navigation }) => {
                 size={48}
               />
             )}
-            {/* <Text style={styles.avatarText}>{user.givenName?.slice(0, 1)}</Text> */}
           </View>
         </TouchableOpacity>
       </View>
@@ -56,10 +71,27 @@ const styles = StyleSheet.create({
   rightSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 10, // Space between bell icon and avatar
   },
-  icon: {
-    marginRight: 15,
+  notificationIcon: {
+    position: 'relative',
+    marginRight: 10,
+  },
+  badge: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    backgroundColor: '#FF0000',
+    borderRadius: 10,
+    width: 18,
+    height: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  badgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   avatarCircle: {
     width: 40,

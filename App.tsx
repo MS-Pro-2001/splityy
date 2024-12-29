@@ -8,11 +8,12 @@ import Loader from './src/components/Loader';
 import AddExpense from './src/screens/AddExpense';
 import CreateGroup from './src/screens/CreateGroup';
 import GroupDetail from './src/screens/GroupDetail';
-import InviteFriends from './src/screens/InviteFriends';
+
 import SplashScreen from './src/screens/SplashScreen'; // Import SplashScreen
 import FAQ from './src/screens/Faq';
 import AboutApp from './src/screens/About';
 import AddGroupMembers from './src/screens/AddGroupMembers';
+import InviteFriends from './src/sheets/InviteFriend';
 
 const App = () => {
   const Stack = createNativeStackNavigator();
@@ -30,10 +31,9 @@ const App = () => {
           headerShown: false, // Hide the headers for all screens
         }}
       >
-        <Stack.Screen name="SplashScreen" component={SplashScreen} />
-
         {user ? (
           <>
+            <Stack.Screen name="SplashScreen" component={SplashScreen} />
             <Stack.Screen name="HomeScreen" component={TabNavigator} />
             <Stack.Screen name="AddExpense" component={AddExpense} />
             <Stack.Screen name="createGroup" component={CreateGroup} />

@@ -8,6 +8,7 @@ import React, {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import database from '@react-native-firebase/database';
+
 type UserType = {
   // Define the structure of your user object
   id: string;
@@ -78,18 +79,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
       const userRef = database().ref(`users/${userId}`);
       userRef.on('value', (snapshot) => {
         const userData = snapshot.val();
+
         if (userData) {
           // Update user data in context and AsyncStorage
-          const userWithGroups: UserType = {
-            ...userInfo.data.user,
+          const loggedInUserData: UserType = {
             ...userData,
           };
-          setUser(userWithGroups);
-          AsyncStorage.setItem('userinfo', JSON.stringify(userWithGroups));
+
+          setUser(loggedInUserData);
+          AsyncStorage.setItem('userinfo', JSON.stringify(loggedInUserData));
         } else {
+          const payload = {
+            ...userInfo?.data?.user,
+            createdAt: `${new Date()}`,
+            updatedAt: `${new Date()}`,
+            isDeleted: false,
+            isVerified: true,
+          };
           database()
             .ref(`users/${userId}`)
-            .set({ ...(userInfo?.data?.user ?? {}) });
+            .set({ ...(payload ?? {}) });
         }
       });
     } catch (error: any) {

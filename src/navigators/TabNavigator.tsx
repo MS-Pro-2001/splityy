@@ -15,7 +15,7 @@ const TabNavigator = () => {
       screenOptions={{
         tabBarActiveTintColor: '#4A249D', // Set active tab color
         tabBarInactiveTintColor: 'gray', // Set inactive tab color (optional)
-        header: (props) => <CustomHeader {...props} />,
+        header: (props) => <CustomHeader notificationCount={0} {...props} />,
       }}
     >
       <Tab.Screen

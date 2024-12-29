@@ -1,12 +1,11 @@
 /* eslint-disable react-native/no-inline-styles */
 import React from 'react';
 import { FlatList, SafeAreaView, StyleSheet, Text, View } from 'react-native';
-import { SheetManager } from 'react-native-actions-sheet';
 import { Avatar, Button, TouchableRipple } from 'react-native-paper';
 import { useAuth } from '../../context/AuthContext';
 import LottieView from 'lottie-react-native';
 import database from '@react-native-firebase/database';
-const ListEmptyComponent = () => (
+const ListEmptyComponent = ({ navigation }: any) => (
   <View
     style={{
       flex: 1,
@@ -28,7 +27,11 @@ const ListEmptyComponent = () => (
       style={{ margin: 20 }}
       icon="email-newsletter"
       mode="contained"
-      onPress={() => SheetManager.show('inviteFriends')}
+      onPress={() =>
+        navigation.navigate('inviteFriends', {
+          from: 'friends',
+        })
+      }
     >
       Invite/Add Friends
     </Button>
@@ -53,11 +56,9 @@ const Item = ({ title }: any) => (
   </TouchableRipple>
 );
 
-const Friends = () => {
+const Friends = ({ navigation, from }: any) => {
   const [friendList, setFriendList] = React.useState();
   const { user }: any = useAuth();
-
-  console.log({ friendList });
 
   React.useEffect(() => {
     const friendListRef: any = database()
@@ -91,17 +92,13 @@ const Friends = () => {
       <FlatList
         // onRefresh={() => setIsRefreshing(true)}
         // refreshing={isRefreshing}
-        ListEmptyComponent={ListEmptyComponent}
+        ListEmptyComponent={
+          <ListEmptyComponent navigation={navigation} from={from} />
+        }
         data={friendList || []}
         renderItem={({ item }: any) => <Item title={item.friend} />}
         keyExtractor={(item: any) => item.id}
       />
-      {/* <FAB
-        icon="share"
-        style={styles.fab}
-        onPress={() => SheetManager.show('inviteFriends')}
-        label="Invite/Add friend"
-      /> */}
     </SafeAreaView>
   );
 };

@@ -10,18 +10,44 @@ import {
 } from 'react-native';
 import { Text, TextInput, Button } from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-
+import database from '@react-native-firebase/database';
 import LottieView from 'lottie-react-native';
 import useGroupService from '../store/groups';
+import { useAuth } from '../context/AuthContext';
 
 const CreateGroup = ({ navigation }: any) => {
   const [groupName, setGroupName] = useState('');
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false); // To handle the loading state
+  const [friendsList, setFriendsList] = useState([]); // To handle the loading state
 
   const textInputRef = useRef<TextInput | null>(null);
 
   const { createGroup } = useGroupService();
+  const { user }: any = useAuth();
+  React.useEffect(() => {
+    const friendListRef = database().ref('/friendList/');
+
+    const onValueChange = friendListRef.on('value', (snapshot) => {
+      const res = snapshot.val();
+
+      if (!res) {
+        console.log('No friends found');
+        setFriendsList([]);
+        return;
+      }
+
+      const data: any = Object.keys(res)
+        .map((key) => ({
+          ...res[key], // Spread the data to include group properties
+        }))
+        .sort((a, b) => b.createdAt - a.createdAt);
+      setFriendsList(data);
+    });
+
+    // Clean up the listener when the component unmounts
+    return () => friendListRef.off('value', onValueChange);
+  }, [user?.id]);
 
   useEffect(() => {
     textInputRef.current?.focus();
@@ -38,7 +64,10 @@ const CreateGroup = ({ navigation }: any) => {
     try {
       await createGroup(groupData);
       setLoading(false); // Stop loading animation
-      navigation.navigate('HomeScreen');
+
+      navigation.navigate('inviteFriends', {
+        from: 'createGroup',
+      });
     } catch (error) {
       console.log('err', error);
     }

@@ -1,6 +1,7 @@
+import 'react-native-get-random-values';
+import { v4 as uuidv4 } from 'uuid';
 export function createUniqueId(): string {
-  const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-  return uniqueId;
+  return uuidv4();
 }
 
 export const truncateText = (text: string, maxLength: number = 30) =>

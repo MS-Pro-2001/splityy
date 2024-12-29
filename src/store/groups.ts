@@ -1,6 +1,7 @@
 import database from '@react-native-firebase/database';
 import { useAuth } from '../context/AuthContext';
-import { createUniqueId } from '../utils/commonFunctions';
+import 'react-native-get-random-values';
+import { v4 as uuidv4 } from 'uuid';
 
 // Type Definitions
 export type GroupType = {
@@ -21,11 +22,11 @@ const useGroupService = () => {
     try {
       const finalGroupData = {
         ...groupData,
-        createdAt: Date.now(),
+        createdAt: `${new Date()}`,
         createdBy: user?.id,
         photo: '',
       };
-      await database().ref(`/groups/${createUniqueId()}`).set(finalGroupData);
+      await database().ref(`/groups/${uuidv4()}`).set(finalGroupData);
       console.log('Group created successfully:', groupData);
     } catch (error) {
       console.error('Error creating group:', error);
@@ -92,7 +93,7 @@ const useGroupService = () => {
    * Fetch all groups created by a specific user.
    */
   const getGroupsByUserId = (): Promise<GroupType[]> => {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       const groupsRef = database()
         .ref('/groups')
         .orderByChild('createdBy')

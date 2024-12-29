@@ -37,7 +37,7 @@ const ListEmptyComponent = ({ navigation }: any) => (
     </Button>
   </View>
 );
-const Item = ({ title }: any) => (
+const Item = ({ details }: any) => (
   <TouchableRipple
     style={styles.item}
     onPress={
@@ -47,10 +47,11 @@ const Item = ({ title }: any) => (
     // rippleColor="rgba(0, 0, 0, .32)"
   >
     <>
-      <Avatar.Text label={title?.[0]?.toUpperCase()} size={48} />
+      <Avatar.Text label={details?.name?.[0]?.toUpperCase()} size={48} />
 
       <View>
-        <Text style={styles.title}>{title}</Text>
+        <Text style={styles.title}>{details?.name}</Text>
+        <Text style={styles.subTitle}>{details?.email}</Text>
       </View>
     </>
   </TouchableRipple>
@@ -66,28 +67,42 @@ const Friends = ({ navigation, from }: any) => {
       .orderByChild('addedBy')
       .equalTo(user?.id);
 
-    const onValueChange = friendListRef.on('value', (snapshot: any) => {
+    const onValueChange = friendListRef.on('value', async (snapshot: any) => {
       const res = snapshot.val();
 
       if (!res) {
-        console.log('No groups found');
+        console.log('No friends found');
         setFriendList([]);
         return;
       }
 
+      // Process the friend list data
       const data: any = Object.keys(res)
         .map((key) => ({
           id: key,
-          ...res[key], // Spread the data to include group properties
+          ...res[key], // Spread the data to include friend properties
         }))
         .sort((a, b) => b.createdAt - a.createdAt);
-      console.log({ data });
-      setFriendList(data);
+
+      // Fetch details of all friends from the users reference
+      const friendsDetailsPromises = data.map(async (item: any) => {
+        const friendId = item.friend; // Assuming 'friend' contains the friend's user ID
+        const userSnapshot = await database()
+          .ref(`/users/${friendId}`)
+          .once('value');
+        const userData = userSnapshot.val();
+        return { ...userData }; // Add friend details to the item
+      });
+
+      // Resolve all promises and update the state
+      const enrichedFriendList: any = await Promise.all(friendsDetailsPromises);
+      setFriendList(enrichedFriendList);
     });
 
     // Clean up the listener when the component unmounts
     return () => friendListRef.off('value', onValueChange);
   }, [user?.id]);
+
   return (
     <SafeAreaView style={{ flex: 1 }}>
       <FlatList
@@ -97,7 +112,7 @@ const Friends = ({ navigation, from }: any) => {
           <ListEmptyComponent navigation={navigation} from={from} />
         }
         data={friendList || []}
-        renderItem={({ item }: any) => <Item title={item.friend} />}
+        renderItem={({ item }: any) => <Item details={item} />}
         keyExtractor={(item: any) => item.id}
       />
     </SafeAreaView>
@@ -145,6 +160,10 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     color: 'black',
+  },
+  subTitle: {
+    fontSize: 12,
+    color: 'grey',
   },
   grpImg: {
     width: 50,

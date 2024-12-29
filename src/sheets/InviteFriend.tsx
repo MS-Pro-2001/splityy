@@ -8,7 +8,7 @@ import useFriendListService from '../store/friends';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { createUniqueId } from '../utils/commonFunctions';
 function InviteFriends({ navigation, route }: any) {
-  const { from } = route.params;
+  const { from = 'default' } = route.params;
 
   const { user }: any = useAuth();
   const { addFriend }: any = useFriendListService();
@@ -33,10 +33,11 @@ function InviteFriends({ navigation, route }: any) {
       await addFriend({
         id: createUniqueId(),
         addedBy: user?.id,
-        friend: formData?.email,
+        friendEmail: formData?.email,
         createdAt: Date.now(),
         isRequestAccepted: false,
         isDeleted: false,
+        friendName: formData?.name,
       });
 
       setLoading(false);

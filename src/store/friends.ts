@@ -5,9 +5,11 @@ import { createUniqueId } from '../utils/commonFunctions';
 export type FriendType = {
   id: string; // Unique ID
   addedBy: string; // User ID who added the friend
-  friend: string; // Friend's User ID
+  friendEmail?: string; // Friend's User ID
   createdAt: number; // Timestamp
   isRequestAccepted: boolean; // Request status
+  friendName?: string;
+  friend: string;
 };
 
 const useFriendListService = () => {
@@ -16,6 +18,37 @@ const useFriendListService = () => {
    */
   const addFriend = async (friendData: FriendType): Promise<void> => {
     try {
+      const userRef = database()
+        .ref('users')
+        .orderByChild('email')
+        .equalTo(friendData?.friendEmail ?? '');
+
+      const snapshot = await userRef.once('value');
+      const userData = snapshot.val();
+      if (!userData) {
+        const userId = createUniqueId();
+        const payload = {
+          googleId: null,
+          name: friendData?.friendName,
+          id: userId,
+          email: friendData?.friendEmail,
+          createdAt: `${new Date()}`,
+          updatedAt: `${new Date()}`,
+          isDeleted: false,
+          isVerified: false,
+        };
+
+        // Save new user to Firebase
+        await database().ref(`users/${userId}`).set(payload);
+        friendData.friend = userId;
+      } else {
+        const userKey = Object.keys(userData)[0];
+        const userDetails = userData[userKey];
+        friendData.friend = userDetails.id;
+      }
+      delete friendData.friendName;
+      delete friendData.friendEmail;
+
       await database().ref(`/friendList/${friendData?.id}`).set(friendData);
       console.log('Friend added successfully:', friendData);
     } catch (error) {

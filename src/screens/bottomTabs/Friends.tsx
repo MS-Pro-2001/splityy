@@ -81,6 +81,7 @@ const Friends = ({ navigation, from }: any) => {
           ...res[key], // Spread the data to include group properties
         }))
         .sort((a, b) => b.createdAt - a.createdAt);
+      console.log({ data });
       setFriendList(data);
     });
 

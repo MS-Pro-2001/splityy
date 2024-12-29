@@ -20,7 +20,9 @@ const Item = ({ title, navigation, groupId, desc }: any) => (
 
       <View>
         <Text style={styles.title}>{truncateText(title)}</Text>
-        <Text style={styles.subtitle}>{truncateText(desc)}</Text>
+        {desc?.trim() && (
+          <Text style={styles.subtitle}>{truncateText(desc)}</Text>
+        )}
       </View>
     </>
     {/* <View style={styles.item}>
@@ -56,10 +58,12 @@ const Groups = ({ navigation }: any) => {
 
       const data: any = Object.keys(res)
         .map((key) => ({
-          groupId: key,
           ...res[key], // Spread the data to include group properties
         }))
-        .sort((a, b) => b.createdAt - a.createdAt);
+        .sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
       setGrpData(data);
     });
 
@@ -129,7 +133,10 @@ const Groups = ({ navigation }: any) => {
           {
             icon: 'android-messages',
             label: 'Invite Friends',
-            onPress: () => navigation.navigate('inviteFriends'),
+            onPress: () =>
+              navigation.navigate('inviteFriends', {
+                from: 'friends',
+              }),
           },
           {
             icon: 'plus',

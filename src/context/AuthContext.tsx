@@ -72,7 +72,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
     try {
       await GoogleSignin.hasPlayServices();
       const userInfo: any = await GoogleSignin.signIn();
-      console.log({ userInfo }, ':::::::::::::::userInfo');
       const email = userInfo?.data?.user?.email;
       // Extract the user ID
 

@@ -20,8 +20,7 @@ const CreateGroup = ({ navigation }: any) => {
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false); // To handle the loading state
   const [friendsList, setFriendsList] = useState([]); // To handle the loading state
-
-  const textInputRef = useRef<TextInput | null>(null);
+  const textInputRef = useRef<null>(null);
 
   const { createGroup } = useGroupService();
   const { user }: any = useAuth();
@@ -64,10 +63,13 @@ const CreateGroup = ({ navigation }: any) => {
     try {
       await createGroup(groupData);
       setLoading(false); // Stop loading animation
-
-      navigation.navigate('inviteFriends', {
-        from: 'createGroup',
-      });
+      if (friendsList.length) {
+        navigation.navigate('addMembers');
+      } else {
+        navigation.navigate('inviteFriends', {
+          from: 'createGroup',
+        });
+      }
     } catch (error) {
       console.log('err', error);
     }

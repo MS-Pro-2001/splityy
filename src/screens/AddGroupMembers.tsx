@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet } from 'react-native';
+import database from '@react-native-firebase/database';
 import { TouchableOpacity, View, Image, ScrollView } from 'react-native';
 import {
   Text,
@@ -7,6 +8,7 @@ import {
   Divider,
   TouchableRipple,
   Avatar,
+  Button,
 } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -16,19 +18,62 @@ import { useAuth } from '../context/AuthContext';
 const AddGroupMembers = ({ navigation }: any) => {
   const [selectedMembers, setSelectedMembers]: [any, any] = useState([]);
   const { user }: any = useAuth();
+  const [friendList, setFriendList] = useState([]);
+  console.log(':::::::::::::');
+  console.log({ friendList }, { depth: null });
+  React.useEffect(() => {
+    const friendListRef: any = database()
+      .ref('/friendList')
+      .orderByChild('addedBy')
+      .equalTo(user?.id);
+
+    const onValueChange = friendListRef.on('value', async (snapshot: any) => {
+      const res = snapshot.val();
+      if (!res) {
+        console.log('No friends found');
+        setFriendList([]);
+        return;
+      }
+
+      // Process the friend list data
+      const data: any = Object.keys(res)
+        .map((key) => ({
+          id: key,
+          ...res[key], // Spread the data to include friend properties
+        }))
+        .sort((a, b) => b.createdAt - a.createdAt);
+
+      // Fetch details of all friends from the users reference
+      const friendsDetailsPromises = data.map(async (item: any) => {
+        const friendId = item.friend; // Assuming 'friend' contains the friend's user ID
+        const userSnapshot = await database()
+          .ref(`/users/${friendId}`)
+          .once('value');
+        const userData = userSnapshot.val();
+        return { ...userData }; // Add friend details to the item
+      });
+
+      // Resolve all promises and update the state
+      const enrichedFriendList: any = await Promise.all(friendsDetailsPromises);
+      setFriendList(enrichedFriendList);
+    });
+
+    // Clean up the listener when the component unmounts
+    return () => friendListRef.off('value', onValueChange);
+  }, [user?.id]);
 
   const toggleSelection = (member: any) => {
-    const userId = member._id;
-    if (selectedMembers.some((selected: any) => selected._id === userId)) {
+    const userId = member.id;
+    if (selectedMembers.some((selected: any) => selected.id === userId)) {
       setSelectedMembers((prev: any) =>
-        prev.filter((selected: any) => selected._id !== userId)
+        prev.filter((selected: any) => selected.id !== userId)
       );
     } else {
       setSelectedMembers((prev: any) => [...prev, member]);
     }
   };
   const isUserSelected = (id: any) => {
-    return selectedMembers.some((member: any) => member?._id === id);
+    return selectedMembers.some((member: any) => member?.id === id);
   };
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -74,9 +119,9 @@ const AddGroupMembers = ({ navigation }: any) => {
                   />
                 </TouchableOpacity>
                 <View style={styles.avatar}>
-                  {member?.image ? (
+                  {member?.photo ? (
                     <Image
-                      source={{ uri: member.image }}
+                      source={{ uri: member.photo }}
                       style={styles.avatarImage}
                     />
                   ) : (
@@ -109,11 +154,11 @@ const AddGroupMembers = ({ navigation }: any) => {
           showsVerticalScrollIndicator={false}
           style={styles.listContainer}
         >
-          {user?.friendsList.map((participant: any) => {
-            const isSelected = isUserSelected(participant._id);
+          {friendList.map((participant: any) => {
+            const isSelected = isUserSelected(participant.id);
             return (
               <View
-                key={participant._id}
+                key={participant.id}
                 style={{
                   ...styles.participantItemContainer,
                   ...(isSelected && { elevation: 0 }),
@@ -127,9 +172,9 @@ const AddGroupMembers = ({ navigation }: any) => {
                   <View style={styles.participantInner}>
                     <View style={styles.participantInfo}>
                       <View style={styles.participantAvatar}>
-                        {participant.image ? (
+                        {participant.photo ? (
                           <Image
-                            source={{ uri: participant.image }}
+                            source={{ uri: participant.photo }}
                             style={styles.avatarImage}
                           />
                         ) : (
@@ -164,6 +209,26 @@ const AddGroupMembers = ({ navigation }: any) => {
             );
           })}
         </ScrollView>
+        {/* TODO save the selectedMembers onPress of this button */}
+        <Button
+          mode="contained"
+          // onPress={handleCreateGroup}
+          disabled={!selectedMembers?.length}
+          // loading={loading}
+          style={[
+            styles.button,
+            // {
+            //   backgroundColor:
+            //     groupName.trim().length < 3 || loading ? '#B0B0B0' : '#4A249D',
+            // },
+          ]}
+          // labelStyle={{
+          //   color:
+          //     groupName.trim().length < 3 || loading ? '#808080' : '#FFFFFF',
+          // }}
+        >
+          {'Next'}
+        </Button>
       </View>
     </SafeAreaView>
   );
@@ -321,5 +386,14 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     backgroundColor: '#EBE8F6',
+  },
+  button: {
+    borderRadius: 5,
+    height: 50,
+    // width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+    marginHorizontal: 20,
   },
 });

@@ -14,58 +14,22 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { truncateText } from '../utils/commonFunctions';
 
-// Utility function to truncate text to 30 characters and append ellipses
+import database from '@react-native-firebase/database';
+import { useAuth } from '../context/AuthContext';
+import Loader from '../components/Loader';
 
-const expensesData = [
-  {
-    id: '1',
-    date: '2024-12-21',
-    name: 'To Coimbatore',
-    category: 'Travel',
-    amount: 554,
-    icon: 'bus',
-  },
-  {
-    id: '2',
-    date: '2024-12-21',
-    name: 'Diesel fuel at CBE',
-    category: 'Fuel',
-    amount: 800,
-    icon: 'gas-station',
-  },
-  {
-    id: '3',
-    date: '2024-12-21',
-    name: 'Weekly - Vegetables',
-    category: 'Vegetables',
-    amount: 350,
-    icon: 'food-apple',
-  },
-  {
-    id: '4',
-    date: '2024-12-20',
-    name: 'Brookefields Cinema',
-    category: 'Entertainment',
-    amount: 350,
-    icon: 'movie',
-  },
-  {
-    id: '5',
-    date: '2024-12-20',
-    name: 'Casuals',
-    category: 'Shopping',
-    amount: 1150,
-    icon: 'tshirt-crew',
-  },
-  {
-    id: '6',
-    date: '2024-12-19',
-    name: 'Night out with Friends',
-    category: 'Party',
-    amount: 550,
-    icon: 'party-popper',
-  },
-];
+interface Expense {
+  id: string;
+  groupId: string;
+  paidBy: string;
+  totalAmount: number;
+  description: string;
+  createdAt: string;
+  updatedAt: string;
+  isDeleted: boolean;
+}
+
+// Utility function to truncate text to 30 characters and append ellipses
 
 const friendsData = [
   { id: '1', name: 'John Doe', contact: '+91 1234567890' },
@@ -95,12 +59,67 @@ const ListEmptyComponent = () => (
   </View>
 );
 const GroupDetail = ({ route, navigation }: any) => {
-  const { groupName } = route.params;
+  const { user }: any = useAuth();
+  const { groupName, groupId, desc } = route.params;
   const dummyImageUrl = 'https://picsum.photos/205/300';
   const [fabExtended, setFabExtended] = useState(true); // Tracks the FAB state
   const [activeTab, setActiveTab] = useState<'expenses' | 'friends'>(
     'expenses'
   ); // Tracks active tab
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  React.useEffect(() => {
+    const fetchGroupExpenses = async () => {
+      try {
+        // Step 1: Get the expenses for the particular groupId
+        const expensesRef = database()
+          .ref('/expenses')
+          .orderByChild('groupId')
+          .equalTo(groupId);
+
+        const snapshot = await expensesRef.once('value');
+        const expensesData = snapshot.val();
+
+        if (!expensesData) {
+          console.log('No expenses found for this group');
+          setExpenses([]); // Set empty array if no expenses found
+          setIsLoading(false);
+          return;
+        }
+
+        // Step 2: For each expense, fetch the user details for paidBy
+        const expensesList = await Promise.all(
+          Object.keys(expensesData).map(async (key) => {
+            const expense = expensesData[key];
+            const userId = expense.paidBy;
+
+            // Step 3: Fetch user details for the paidBy userId
+            const userSnapshot = await database()
+              .ref(`/users/${userId}`)
+              .once('value');
+            const userDetails = userSnapshot.val();
+            console.log({ userDetails });
+
+            // Add the user details to the expense object
+            return {
+              ...expense,
+              id: key, // Include the expense ID from the snapshot key
+              paidBy: userDetails, // Add user details
+            };
+          })
+        );
+        // Step 4: Set the expenses state with the fetched expenses
+        setExpenses(expensesList);
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Error fetching group expenses:', error);
+        setIsLoading(false);
+      }
+    };
+
+    fetchGroupExpenses();
+  }, [groupId]);
 
   const formatDate = (dateString: string) => {
     const today = new Date();
@@ -126,25 +145,30 @@ const GroupDetail = ({ route, navigation }: any) => {
     }
   };
 
-  const groupedExpenses = expensesData.reduce((acc, expense) => {
-    const formattedDate = formatDate(expense.date);
+  const groupedExpenses = expenses.reduce((acc, expense) => {
+    const formattedDate = formatDate(expense.createdAt);
     if (!acc[formattedDate]) {
       acc[formattedDate] = [];
     }
     acc[formattedDate].push(expense);
     return acc;
-  }, {} as Record<string, typeof expensesData>);
+  }, {} as Record<string, typeof expenses>);
 
-  const renderExpenseItem = ({ item }: { item: (typeof expensesData)[0] }) => (
+  const renderExpenseItem = ({ item }: any) => (
     <View style={styles.expenseItem}>
-      <MaterialCommunityIcons name={item.icon} size={30} color="#4A249D" />
+      <MaterialCommunityIcons name="party-popper" size={30} color="#4A249D" />
       <View style={styles.expenseDetails}>
-        <Text style={styles.expenseName}>{truncateText(item.name)}</Text>
+        <Text style={styles.expenseName}>
+          {truncateText(item.description) || 'Expense'}
+        </Text>
         <Text style={styles.expenseCategory}>
-          {truncateText(item.category)}
+          {truncateText(item.description) ||
+            `paid by ${
+              user?.id === item?.paidBy?.id ? 'You' : item?.paidBy?.name
+            }`}
         </Text>
       </View>
-      <Text style={styles.expenseAmount}>₹{item.amount}</Text>
+      <Text style={styles.expenseAmount}>₹{item.totalAmount}</Text>
     </View>
   );
 
@@ -192,7 +216,10 @@ const GroupDetail = ({ route, navigation }: any) => {
             />
           </TouchableOpacity>
           {/* Group Name */}
-          <Text style={styles.groupName}>{groupName}</Text>
+          <View>
+            <Text style={styles.groupName}>{groupName}</Text>
+            <Text style={styles.groupName}>{desc}</Text>
+          </View>
         </View>
 
         {/* Tabs for Expenses and Friends */}
@@ -224,6 +251,7 @@ const GroupDetail = ({ route, navigation }: any) => {
             </Text>
           </TouchableOpacity>
         </View>
+        {isLoading && <Loader />}
 
         {/* Expenses or Friends List */}
         {activeTab === 'expenses' ? (
@@ -250,7 +278,7 @@ const GroupDetail = ({ route, navigation }: any) => {
         <FAB
           icon="plus"
           style={styles.fab}
-          onPress={() => navigation.navigate('AddExpense')}
+          onPress={() => navigation.navigate('AddExpense', { groupId })}
           label={
             activeTab === 'expenses'
               ? fabExtended
@@ -351,7 +379,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   expenseCategory: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#666',
   },
   expenseAmount: {

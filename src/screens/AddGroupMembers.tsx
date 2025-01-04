@@ -14,12 +14,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome6';
 import { useAuth } from '../context/AuthContext';
+import useGroupService from '../store/groups';
+import { useSnackbar } from '../context/SnackbarContext';
 
-const AddGroupMembers = ({ navigation }: any) => {
+const AddGroupMembers = ({ navigation, route }: any) => {
+  const { groupData } = route.params;
+  const { showMessage } = useSnackbar();
+  const { createGroup, createGroupMembers } = useGroupService();
   const [selectedMembers, setSelectedMembers]: [any, any] = useState([]);
   const { user }: any = useAuth();
   const [friendList, setFriendList] = useState([]);
-  console.log(':::::::::::::');
   console.log({ friendList }, { depth: null });
   React.useEffect(() => {
     const friendListRef: any = database()
@@ -75,13 +79,41 @@ const AddGroupMembers = ({ navigation }: any) => {
   const isUserSelected = (id: any) => {
     return selectedMembers.some((member: any) => member?.id === id);
   };
+
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleCreateGroup = async () => {
+    setIsLoading(true);
+    console.log({ selectedMembers });
+
+    try {
+      // Create the group and get the group ID
+      const groupId = await createGroup(groupData);
+
+      // Loop through the selectedMembers array and create group members
+      for (let member of selectedMembers) {
+        await createGroupMembers({
+          memberId: member.id, // assuming each member has an id field
+          groupId,
+        });
+      }
+
+      setIsLoading(false);
+      showMessage('Group Created Successfully', 2000);
+      navigation.navigate('Groups');
+    } catch (error) {
+      console.log('err', error);
+    }
+  };
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('createGroup', { mode: 'edit' })}
+        >
           <MaterialCommunityIcons name="arrow-left" size={36} color="#4A249D" />
         </TouchableOpacity>
-        <Text style={styles.heading}>Create Group</Text>
+        <Text style={styles.heading}>{groupData?.groupName}</Text>
       </View>
       <View style={styles.container}>
         <FontAwesome
@@ -212,9 +244,9 @@ const AddGroupMembers = ({ navigation }: any) => {
         {/* TODO save the selectedMembers onPress of this button */}
         <Button
           mode="contained"
-          // onPress={handleCreateGroup}
+          onPress={handleCreateGroup}
           disabled={!selectedMembers?.length}
-          // loading={loading}
+          loading={isLoading}
           style={[
             styles.button,
             // {
@@ -227,7 +259,7 @@ const AddGroupMembers = ({ navigation }: any) => {
           //     groupName.trim().length < 3 || loading ? '#808080' : '#FFFFFF',
           // }}
         >
-          {'Next'}
+          {'Create Group'}
         </Button>
       </View>
     </SafeAreaView>

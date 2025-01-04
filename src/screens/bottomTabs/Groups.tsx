@@ -7,13 +7,16 @@ import LottieView from 'lottie-react-native';
 import { truncateText } from '../../utils/commonFunctions';
 import database from '@react-native-firebase/database';
 import { useAuth } from '../../context/AuthContext';
-import { useSnackbar } from '../../context/SnackbarContext';
 
-const Item = ({ title, navigation, groupId, desc }: any) => (
+const Item = ({ title, navigation, id, desc }: any) => (
   <TouchableRipple
     style={styles.item}
     onPress={() =>
-      navigation.navigate('groupDetail', { groupName: title, groupId, desc })
+      navigation.navigate('groupDetail', {
+        groupName: title,
+        groupId: id,
+        desc,
+      })
     }
   >
     <>
@@ -35,7 +38,6 @@ const Item = ({ title, navigation, groupId, desc }: any) => (
 );
 
 const Groups = ({ navigation }: any) => {
-  const { showMessage } = useSnackbar();
   const [state, setState] = React.useState({ open: false });
   const [grpData, setGrpData] = React.useState([]);
 
@@ -73,6 +75,8 @@ const Groups = ({ navigation }: any) => {
     return () => groupsRef.off('value', onValueChange);
   }, [user?.id]);
 
+  console.log({ grpData });
+
   const onStateChange = ({ open }: any) => setState({ open });
 
   // const [isRefreshing, setIsRefreshing] = useState(false);
@@ -104,7 +108,7 @@ const Groups = ({ navigation }: any) => {
               style={{ margin: 20 }}
               icon="plus"
               mode="contained"
-              onPress={() => showMessage('Group created successfully!!', 2000)}
+              onPress={() => navigation.navigate('createGroup')}
             >
               Create Group
             </Button>
@@ -115,11 +119,11 @@ const Groups = ({ navigation }: any) => {
           <Item
             title={item.groupName}
             navigation={navigation}
-            groupId={item.groupId}
+            id={item.id}
             desc={item.description}
           />
         )}
-        keyExtractor={(item: any) => item.groupId}
+        keyExtractor={(item: any) => item.id}
       />
       <FAB.Group
         open={state.open}

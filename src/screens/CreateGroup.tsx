@@ -12,7 +12,7 @@ import { Text, TextInput, Button } from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import database from '@react-native-firebase/database';
 import LottieView from 'lottie-react-native';
-import useGroupService from '../store/groups';
+// import useGroupService from '../store/groups';
 import { useAuth } from '../context/AuthContext';
 
 const CreateGroup = ({ navigation }: any) => {
@@ -22,7 +22,7 @@ const CreateGroup = ({ navigation }: any) => {
   const [friendsList, setFriendsList] = useState([]); // To handle the loading state
   const textInputRef = useRef<null>(null);
 
-  const { createGroup } = useGroupService();
+  // const { createGroup } = useGroupService();
   const { user }: any = useAuth();
   React.useEffect(() => {
     const friendListRef = database().ref('/friendList/');
@@ -61,13 +61,14 @@ const CreateGroup = ({ navigation }: any) => {
     };
 
     try {
-      await createGroup(groupData);
+      // await createGroup(groupData);
       setLoading(false); // Stop loading animation
       if (friendsList.length) {
-        navigation.navigate('addMembers');
+        navigation.navigate('addMembers', { groupData });
       } else {
         navigation.navigate('inviteFriends', {
           from: 'createGroup',
+          groupData,
         });
       }
     } catch (error) {
@@ -156,7 +157,7 @@ const CreateGroup = ({ navigation }: any) => {
               groupName.trim().length < 3 || loading ? '#808080' : '#FFFFFF',
           }}
         >
-          {loading ? 'Creating...' : 'Create Group'}
+          {loading ? 'Creating...' : 'Add Friends'}
         </Button>
       </ScrollView>
     </KeyboardAvoidingView>

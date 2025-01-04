@@ -18,16 +18,42 @@ const useGroupService = () => {
   /**
    * Create a new group in Firebase.
    */
-  const createGroup = async (groupData: GroupType): Promise<void> => {
+  const createGroup = async (groupData: GroupType): Promise<string> => {
     try {
+      const groupId = uuidv4();
       const finalGroupData = {
         ...groupData,
+        id: groupId,
         createdAt: `${new Date()}`,
         createdBy: user?.id,
         photo: '',
       };
-      await database().ref(`/groups/${uuidv4()}`).set(finalGroupData);
+      await database().ref(`/groups/${groupId}`).set(finalGroupData);
       console.log('Group created successfully:', groupData);
+      return groupId;
+    } catch (error: any) {
+      console.error('Error creating group:', error);
+      return error;
+    }
+  };
+
+  const createGroupMembers = async ({
+    memberId,
+    groupId,
+  }: any): Promise<void> => {
+    try {
+      const groupMemberId = uuidv4();
+      const finalGroupData = {
+        id: groupMemberId,
+        joinedAt: `${new Date()}`,
+        isDeleted: false,
+        groupId: groupId,
+        userId: memberId,
+      };
+      await database()
+        .ref(`/group-members/${groupMemberId}`)
+        .set(finalGroupData);
+      console.log('Group created successfully:', memberId);
     } catch (error) {
       console.error('Error creating group:', error);
     }
@@ -134,6 +160,7 @@ const useGroupService = () => {
     deleteGroup,
     subscribeToGroup,
     getGroupsByUserId,
+    createGroupMembers,
   };
 };
 

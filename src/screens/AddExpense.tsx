@@ -3,48 +3,165 @@ import React, { useState } from 'react';
 import {
   View,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   Text,
-  FlatList,
   TextInput as RNTextInput,
+  FlatList,
 } from 'react-native';
-import { TextInput, Button, Chip } from 'react-native-paper';
-import ActionSheet, { SheetManager } from 'react-native-actions-sheet';
+import { Button } from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import useExpenseService, { ExpenseType } from '../store/expense';
+import { useAuth } from '../context/AuthContext';
+import { useSnackbar } from '../context/SnackbarContext';
+import database from '@react-native-firebase/database';
+import Loader from '../components/Loader';
+interface Person {
+  id: string;
+  name: string;
+  avatar: string;
+  amount: number;
+  checked: boolean;
+}
 
-const AddExpense = ({ navigation }: any) => {
-  const [expenseName, setExpenseName] = useState('');
-  const [amount, setAmount] = useState(0);
+const AddExpensePage = ({ navigation, route }: any) => {
+  const { groupId } = route.params;
+  const { user }: any = useAuth();
+  const { showMessage } = useSnackbar();
+  const [amount, setAmount] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
   const [description, setDescription] = useState('');
-  const [people, setPeople] = useState(['John', 'Emma', 'Sophia', 'Liam']); // Dummy people list
-  const [filteredPeople, setFilteredPeople] = useState(people); // Filtered list for search
-  const [paidBy, setPaidBy] = useState('You'); // Default paid by "You"
-  const [distributeEqually, setDistributeEqually] = useState(true); // Default distribute equally
-  const [manualChips, setManualChips] = useState(people); // Chips shown in "Manual" mode
+  const [activeTab, setActiveTab] = useState(0); // 0: Divide Equally, 1: Divide Manually
+  const [people, setPeople] = useState<Person[]>([]);
 
-  // Handle person selection from action sheet
-  const handleSelectPerson = (person: any) => {
-    setPaidBy(person);
-    SheetManager.hide('paidBySheet');
+  React.useEffect(() => {
+    const fetchGroupMembers = async () => {
+      try {
+        // Step 1: Get the user IDs from the group_members table using the groupId
+        const groupMembersRef = database()
+          .ref('/group-members')
+          .orderByChild('groupId')
+          .equalTo(groupId);
+
+        const snapshot = await groupMembersRef.once('value');
+        const groupMembersData = snapshot.val();
+
+        if (!groupMembersData) {
+          console.log('No members found for this group');
+          setPeople([]); // Set empty array if no members found
+          setIsLoading(false);
+          return;
+        }
+
+        const userIds = Object.keys(groupMembersData).map(
+          (key) => groupMembersData[key].userId
+        );
+
+        // Step 2: Fetch user details from the users table based on the userIds
+        const usersRef = database().ref('/users');
+        const usersPromises = userIds.map((userId) =>
+          usersRef.child(userId).once('value')
+        );
+
+        const usersSnapshot = await Promise.all(usersPromises);
+        const usersData = usersSnapshot.map((userSnapshot) =>
+          userSnapshot.val()
+        );
+        console.log({ usersData });
+
+        // Step 3: Set the people state with the fetched user details
+        setPeople(
+          usersData?.map((item: any) => ({
+            ...item,
+            amount: 0,
+            checked: true,
+            avatar: item?.photo,
+          }))
+        );
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Error fetching group members or users:', error);
+        setIsLoading(false);
+      }
+    };
+
+    fetchGroupMembers();
+  }, [groupId]);
+
+  console.log({ amount });
+
+  const { createExpense, createExpenseSplit } = useExpenseService();
+
+  const handleAddExpense = async () => {
+    try {
+      const newExpense: Omit<
+        ExpenseType,
+        'id' | 'createdAt' | 'updatedAt' | 'isDeleted'
+      > = {
+        groupId: groupId,
+        paidBy: user?.id,
+        totalAmount: parseFloat(amount),
+        description: description || '',
+      };
+      const expenseId = await createExpense(newExpense);
+
+      if (activeTab === 0) {
+        const splitAmount =
+          parseFloat(amount) /
+            people.filter((person) => person.checked).length || 0;
+        await Promise.all(
+          people
+            .filter((person) => person.checked)
+            .map((person) =>
+              createExpenseSplit({
+                expenseId,
+                userId: person.id,
+                amountOwed: splitAmount,
+                amountPaid: 0,
+                settled: false,
+              })
+            )
+        );
+      } else {
+        await Promise.all(
+          people
+            .filter((person) => person.checked)
+            .map((person) =>
+              createExpenseSplit({
+                expenseId,
+                userId: person.id,
+                amountOwed: person.amount,
+                amountPaid: 0,
+                settled: false,
+              })
+            )
+        );
+      }
+
+      showMessage('Expense added successfully', 2000);
+      navigation.goBack();
+
+      console.log('Expense and splits created successfully');
+    } catch (error) {
+      console.error('Error adding expense:', error);
+    }
   };
 
-  // Filter people list for search
-  const handleSearch = (text: string) => {
-    const filtered = people.filter((person) =>
-      person.toLowerCase().includes(text.toLowerCase())
+  const handleManualAmountChange = (id: string, value: string) => {
+    const updatedPeople = people.map((person) =>
+      person.id === id ? { ...person, amount: parseFloat(value) || 0 } : person
     );
-    setFilteredPeople(filtered);
+    setPeople(updatedPeople);
   };
 
-  // Disable button if expense name or amount is invalid
-  const isFormValid = () => {
-    return expenseName.length >= 3 && !isNaN(amount) && Number(amount) > 0;
+  const togglePersonChecked = (id: string) => {
+    const updatedPeople = people.map((person) =>
+      person.id === id ? { ...person, checked: !person.checked } : person
+    );
+    setPeople(updatedPeople);
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      {/* Back Button and Heading */}
+    <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <MaterialCommunityIcons name="arrow-left" size={24} color="#4A249D" />
@@ -52,153 +169,119 @@ const AddExpense = ({ navigation }: any) => {
         <Text style={styles.heading}>Add Expense</Text>
       </View>
 
-      <TextInput
-        label="Expense Name"
-        value={expenseName}
-        onChangeText={setExpenseName}
-        placeholder="Enter expense name"
-        mode="outlined"
-        style={styles.input}
-        theme={{ colors: { primary: '#4A249D' } }}
-      />
+      <View style={styles.inputContainer}>
+        <Text style={styles.currency}>₹</Text>
+        <RNTextInput
+          value={amount}
+          onChangeText={setAmount}
+          placeholder="Enter amount"
+          keyboardType="numeric"
+          style={styles.amountInput}
+        />
+      </View>
 
-      <TextInput
-        label="₹ Amount"
-        value={amount}
-        onChangeText={setAmount}
-        placeholder="Enter amount"
-        keyboardType="numeric"
-        mode="outlined"
-        style={styles.input}
-        theme={{ colors: { primary: '#4A249D' } }}
-      />
+      <View style={styles.descriptionContainer}>
+        <RNTextInput
+          value={description}
+          onChangeText={setDescription}
+          placeholder="Add a description"
+          style={styles.descriptionInput}
+        />
+      </View>
 
-      <TextInput
-        label="Description"
-        value={description}
-        onChangeText={setDescription}
-        placeholder="Enter description"
-        multiline
-        mode="outlined"
-        style={styles.input}
-        theme={{ colors: { primary: '#4A249D' } }}
-      />
-
-      {/* Paid By Section */}
-      <View style={styles.row}>
-        <Text style={styles.label}>Paid By</Text>
-        <TouchableOpacity
-          style={styles.selectButton}
-          onPress={() => SheetManager.show('paidBySheet')}
-        >
-          <Text style={styles.selectText}>{paidBy}</Text>
+      <View style={styles.tabs}>
+        <TouchableOpacity onPress={() => setActiveTab(0)} style={styles.tab}>
           <MaterialCommunityIcons
-            name="chevron-down"
+            name="scale-balance"
             size={24}
-            color="#4A249D"
+            color={activeTab === 0 ? '#4A249D' : '#aaa'}
+          />
+        </TouchableOpacity>
+        <View style={styles.verticalLine} />
+        <TouchableOpacity onPress={() => setActiveTab(1)} style={styles.tab}>
+          <MaterialCommunityIcons
+            name="numeric"
+            size={24}
+            color={activeTab === 1 ? '#4A249D' : '#aaa'}
           />
         </TouchableOpacity>
       </View>
+      <View style={styles.separator} />
+      <Text style={styles.tabLabel}>
+        {activeTab === 0 ? 'Split Equally' : 'Split Manually'}
+      </Text>
 
-      {/* Distribute Section */}
-      <View style={styles.row}>
-        <Text style={styles.label}>Distribute</Text>
-        <Chip
-          onPress={() => setDistributeEqually(!distributeEqually)}
-          style={styles.chip}
-          mode={distributeEqually ? 'flat' : 'outlined'}
-        >
-          {distributeEqually || manualChips?.length === 0
-            ? 'Equally'
-            : 'Manually'}
-        </Chip>
-      </View>
+      {isLoading && <Loader />}
 
-      {!distributeEqually && (
-        <View style={styles.chipContainer}>
-          {manualChips.map((person, index) => (
-            <Chip
-              key={index}
-              onClose={() =>
-                setManualChips(manualChips.filter((p) => p !== person))
-              }
-              style={styles.chip}
-            >
-              {person}
-            </Chip>
-          ))}
-        </View>
-      )}
+      <FlatList
+        data={people}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <View style={styles.personRow}>
+            <MaterialCommunityIcons
+              name={item.checked ? 'check-circle' : 'checkbox-blank-circle'}
+              size={24}
+              color={item.checked ? '#4A249D' : '#fff'}
+              onPress={() => togglePersonChecked(item.id)}
+              style={{
+                width: 24,
+                height: 24,
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: '#4A249D',
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginRight: 10,
+                backgroundColor: '#fff',
+              }}
+            />
+
+            {/* <Avatar.Image source={{ uri: item.avatar }} size={40} /> */}
+            <Text style={styles.personName}>{item.name}</Text>
+            {activeTab === 0 ? (
+              <Text style={styles.personAmount}>
+                ₹
+                {!item.checked
+                  ? 0
+                  : (
+                      parseFloat(amount) /
+                        people.filter((person) => person.checked).length || 0
+                    ).toFixed(2)}
+              </Text>
+            ) : (
+              <View style={styles.manualInputContainer}>
+                <Text style={styles.currency}>₹</Text>
+                <RNTextInput
+                  value={item?.amount?.toString()}
+                  onChangeText={(value) =>
+                    handleManualAmountChange(item.id, value)
+                  }
+                  placeholder="0"
+                  keyboardType="numeric"
+                  style={styles.manualInput}
+                />
+              </View>
+            )}
+          </View>
+        )}
+        contentContainerStyle={{ paddingBottom: 20 }}
+      />
 
       <Button
         mode="contained"
-        onPress={() =>
-          console.log({
-            expenseName,
-            amount,
-            paidBy,
-            description,
-            manualChips,
-            distributeEqually,
-          })
-        }
-        disabled={!isFormValid()}
-        style={[
-          styles.button,
-          { backgroundColor: isFormValid() ? '#4A249D' : '#B0B0B0' },
-        ]}
+        onPress={handleAddExpense}
+        style={styles.addButton}
       >
         Add Expense
       </Button>
-
-      {/* Paid By Action Sheet */}
-      <ActionSheet id="paidBySheet">
-        <View style={styles.actionSheetContainer}>
-          <TouchableOpacity
-            onPress={() => SheetManager.hide('paidBySheet')}
-            style={styles.closeButton}
-          >
-            <MaterialCommunityIcons name="close" size={24} color="#4A249D" />
-          </TouchableOpacity>
-          <View style={styles.searchBar}>
-            <MaterialCommunityIcons name="magnify" size={20} color="#4A249D" />
-            <RNTextInput
-              placeholder="Search People"
-              placeholderTextColor="#999"
-              onChangeText={handleSearch}
-              style={styles.searchInput}
-            />
-          </View>
-
-          <FlatList
-            data={filteredPeople}
-            keyExtractor={(item, index) => index.toString()}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.personItem}
-                onPress={() => handleSelectPerson(item)}
-              >
-                <Text style={styles.personName}>{item}</Text>
-                {paidBy === item && (
-                  <MaterialCommunityIcons
-                    name="check"
-                    size={24}
-                    color="#4A249D"
-                  />
-                )}
-              </TouchableOpacity>
-            )}
-          />
-        </View>
-      </ActionSheet>
-    </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flexGrow: 1,
-    backgroundColor: '#ffffff',
+    flex: 1,
+    backgroundColor: '#fff',
     paddingHorizontal: 20,
     paddingTop: 30,
   },
@@ -213,81 +296,114 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     fontWeight: 'bold',
   },
-  input: {
-    marginBottom: 20,
-    backgroundColor: 'white',
-    fontSize: 16,
-  },
-  row: {
+  inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 18,
-    color: '#4A249D',
-  },
-  selectButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderColor: '#4A249D',
-    borderWidth: 1,
-    borderRadius: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-  },
-  selectText: {
-    color: '#4A249D',
-    fontSize: 16,
-  },
-  chipContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginBottom: 20,
-  },
-  chip: {
-    backgroundColor: '#EDE7F6',
-    marginBottom: 10,
-    marginTop: 10,
-  },
-  button: {
-    marginTop: 20,
-    borderRadius: 8,
-    height: 50,
     justifyContent: 'center',
+    marginBottom: 10,
   },
-  actionSheetContainer: {
-    padding: 20,
-    backgroundColor: '#fff',
+  currency: {
+    fontSize: 23,
+    color: '#4A249D',
+    marginRight: 5,
+    marginBottom: 10,
   },
-  searchBar: {
+  amountInput: {
+    fontSize: 24,
+    color: '#4A249D',
+    borderBottomWidth: 1,
+    borderBottomColor: '#4A249D',
+    textAlign: 'center',
+    width: '50%',
+    marginBottom: 20,
+  },
+  descriptionContainer: {
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  descriptionInput: {
+    fontSize: 16,
+    color: '#4A249D',
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
+    width: '90%',
+    textAlign: 'center',
+    opacity: 0.8,
+  },
+  tabs: {
     flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 10,
   },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    color: '#333',
+  tab: {
+    paddingHorizontal: 80,
+  },
+  verticalLine: {
+    height: 30,
+    width: 1,
+    backgroundColor: '#ddd',
+    marginHorizontal: 10,
+  },
+  separator: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
+    marginVertical: 10,
+  },
+  tabLabel: {
+    fontSize: 10,
+    marginBottom: 10,
+    textAlign: 'left',
     marginLeft: 10,
   },
-  closeButton: {
-    alignSelf: 'flex-end',
-    marginBottom: 10,
-  },
-  personItem: {
+  personRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    marginVertical: 10,
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    // borderColor: '#4A249D',
+    // justifyContent: 'center',
+    // alignItems: 'center',
+    // marginRight: 10,
+    // backgroundColor: '#fff',
   },
   personName: {
     fontSize: 18,
     color: '#4A249D',
+    flex: 1,
+    marginLeft: 10,
+  },
+  personAmount: {
+    fontSize: 16,
+    color: '#4A249D',
+  },
+  manualInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#4A249D',
+    width: 80,
+    justifyContent: 'center',
+  },
+  manualInput: {
+    fontSize: 16,
+    color: '#4A249D',
+    textAlign: 'right',
+    flex: 1,
+  },
+  addButton: {
+    marginBottom: 10,
+    borderRadius: 8,
+    backgroundColor: '#4A249D',
+    height: 50,
+    justifyContent: 'center',
   },
 });
 
-export default AddExpense;
+export default AddExpensePage;

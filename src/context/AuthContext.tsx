@@ -113,6 +113,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
           updatedAt: `${new Date()}`,
           isDeleted: false,
           isVerified: true,
+          photo: userInfo?.data?.user.photo,
         };
 
         // Save new user to Firebase

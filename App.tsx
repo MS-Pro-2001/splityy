@@ -14,6 +14,7 @@ import FAQ from './src/screens/Faq';
 import AboutApp from './src/screens/About';
 import AddGroupMembers from './src/screens/AddGroupMembers';
 import InviteFriends from './src/sheets/InviteFriend';
+import ExpenseDetail from './src/screens/ExpenseDetial';
 
 const App = () => {
   const Stack = createNativeStackNavigator();
@@ -40,6 +41,8 @@ const App = () => {
             <Stack.Screen name="addMembers" component={AddGroupMembers} />
             <Stack.Screen name="groupDetail" component={GroupDetail} />
             <Stack.Screen name="inviteFriends" component={InviteFriends} />
+            <Stack.Screen name="expenseDetails" component={ExpenseDetail} />
+
             <Stack.Screen name="faq" component={FAQ} />
             <Stack.Screen name="about" component={AboutApp} />
           </>

@@ -87,8 +87,6 @@ const AddExpensePage = ({ navigation, route }: any) => {
     fetchGroupMembers();
   }, [groupId]);
 
-  console.log({ amount });
-
   const { createExpense, createExpenseSplit } = useExpenseService();
 
   const handleAddExpense = async () => {

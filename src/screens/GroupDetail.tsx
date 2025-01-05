@@ -17,6 +17,7 @@ import { truncateText } from '../utils/commonFunctions';
 import database from '@react-native-firebase/database';
 import { useAuth } from '../context/AuthContext';
 import Loader from '../components/Loader';
+import { useFocusEffect } from '@react-navigation/native';
 
 interface Expense {
   id: string;
@@ -69,57 +70,54 @@ const GroupDetail = ({ route, navigation }: any) => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  React.useEffect(() => {
-    const fetchGroupExpenses = async () => {
-      try {
-        // Step 1: Get the expenses for the particular groupId
-        const expensesRef = database()
-          .ref('/expenses')
-          .orderByChild('groupId')
-          .equalTo(groupId);
+  // Fetch Group Expenses function
+  const fetchGroupExpenses = React.useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const expensesRef = database()
+        .ref('/expenses')
+        .orderByChild('groupId')
+        .equalTo(groupId);
 
-        const snapshot = await expensesRef.once('value');
-        const expensesData = snapshot.val();
+      const snapshot = await expensesRef.once('value');
+      const expensesData = snapshot.val();
 
-        if (!expensesData) {
-          console.log('No expenses found for this group');
-          setExpenses([]); // Set empty array if no expenses found
-          setIsLoading(false);
-          return;
-        }
-
-        // Step 2: For each expense, fetch the user details for paidBy
-        const expensesList = await Promise.all(
-          Object.keys(expensesData).map(async (key) => {
-            const expense = expensesData[key];
-            const userId = expense.paidBy;
-
-            // Step 3: Fetch user details for the paidBy userId
-            const userSnapshot = await database()
-              .ref(`/users/${userId}`)
-              .once('value');
-            const userDetails = userSnapshot.val();
-            console.log({ userDetails });
-
-            // Add the user details to the expense object
-            return {
-              ...expense,
-              id: key, // Include the expense ID from the snapshot key
-              paidBy: userDetails, // Add user details
-            };
-          })
-        );
-        // Step 4: Set the expenses state with the fetched expenses
-        setExpenses(expensesList);
+      if (!expensesData) {
+        setExpenses([]);
         setIsLoading(false);
-      } catch (error) {
-        console.error('Error fetching group expenses:', error);
-        setIsLoading(false);
+        return;
       }
-    };
 
-    fetchGroupExpenses();
+      const expensesList = await Promise.all(
+        Object.keys(expensesData).map(async (key) => {
+          const expense = expensesData[key];
+          const userId = expense.paidBy;
+          const userSnapshot = await database()
+            .ref(`/users/${userId}`)
+            .once('value');
+          const userDetails = userSnapshot.val();
+          return { ...expense, id: key, paidBy: userDetails };
+        })
+      );
+
+      // Sort the expenses by createdAt in descending order (latest first)
+      const sortedExpenses = expensesList.sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      setExpenses(sortedExpenses);
+    } catch (error) {
+      console.error('Error fetching group expenses:', error);
+    } finally {
+      setIsLoading(false);
+    }
   }, [groupId]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchGroupExpenses();
+    }, [fetchGroupExpenses])
+  );
 
   const formatDate = (dateString: string) => {
     const today = new Date();
@@ -155,21 +153,27 @@ const GroupDetail = ({ route, navigation }: any) => {
   }, {} as Record<string, typeof expenses>);
 
   const renderExpenseItem = ({ item }: any) => (
-    <View style={styles.expenseItem}>
-      <MaterialCommunityIcons name="party-popper" size={30} color="#4A249D" />
-      <View style={styles.expenseDetails}>
-        <Text style={styles.expenseName}>
-          {truncateText(item.description) || 'Expense'}
-        </Text>
-        <Text style={styles.expenseCategory}>
-          {truncateText(item.description) ||
-            `paid by ${
-              user?.id === item?.paidBy?.id ? 'You' : item?.paidBy?.name
-            }`}
-        </Text>
+    <TouchableOpacity
+      onPress={() => {
+        navigation.navigate('expenseDetails', { expense: item });
+      }}
+    >
+      <View style={styles.expenseItem}>
+        <MaterialCommunityIcons name="party-popper" size={30} color="#4A249D" />
+        <View style={styles.expenseDetails}>
+          <Text style={styles.expenseName}>
+            {truncateText(item.description) || 'Expense'}
+          </Text>
+          <Text style={styles.expenseCategory}>
+            {truncateText(item.description) ||
+              `paid by ${
+                user?.id === item?.paidBy?.id ? 'You' : item?.paidBy?.name
+              }`}
+          </Text>
+        </View>
+        <Text style={styles.expenseAmount}>₹{item.totalAmount}</Text>
       </View>
-      <Text style={styles.expenseAmount}>₹{item.totalAmount}</Text>
-    </View>
+    </TouchableOpacity>
   );
 
   const renderFriendItem = ({ item }: { item: (typeof friendsData)[0] }) => (
